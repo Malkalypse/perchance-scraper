@@ -1,0 +1,5 @@
+cloudscraper
+beautifulsoup4
+Pillow
+send2trash
+requests
