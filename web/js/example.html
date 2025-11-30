@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reusable Classes Example</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .toolbar {
+      background: #f5f5f5;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat( auto-fill, minmax( 200px, 1fr ) );
+      gap: 15px;
+    }
+    
+    .gallery img {
+      width: 100%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: border-color 0.2s;
+    }
+    
+    .gallery img.selected {
+      border-color: #007bff;
+    }
+    
+    .gallery img:hover {
+      opacity: 0.8;
+    }
+    
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 4px;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    input[type="number"] {
+      width: 100px;
+      padding: 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    .state-display {
+      background: #f0f0f0;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Reusable JavaScript Classes Demo</h1>
+  
+  <div class="state-display">
+    <strong>Current State:</strong>
+    <div id="stateDisplay"></div>
+  </div>
+  
+  <div class="toolbar">
+    <button id="selectAll">Select All</button>
+    <button id="deselectAll">Deselect All</button>
+    <button id="deleteSelected" disabled>Delete Selected</button>
+    <label>
+      Limit: 
+      <input type="number" id="limitInput" value="12">
+    </label>
+    <button id="loadMore">Load More</button>
+    <button id="resetState">Reset State</button>
+  </div>
+  
+  <div id="gallery" class="gallery"></div>
+  
+  <!-- Load classes -->
+  <script src="js/GalleryState.js"></script>
+  <script src="js/APIClient.js"></script>
+  <script src="js/DOMHelper.js"></script>
+  <script src="js/ImageSelector.js"></script>
+  
+  <script>
+    // ============================================
+    // Initialize classes
+    // ============================================
+    
+    // State manager with defaults
+    const state = new GalleryState( 'demo', {
+      limit: 12,
+      offset: 0,
+      viewMode: 'grid'
+    } );
+    
+    // API client (using placeholder API for demo)
+    const api = new APIClient( 'https://picsum.photos' );
+    
+    // Image selector
+    const selector = new ImageSelector( {
+      selectedClass: 'selected',
+      itemSelector: 'img',
+      onChange: ( selectedIds ) => {
+        updateStateDisplay();
+        updateDeleteButton();
+      }
+    } );
+    
+    
+    // ============================================
+    // UI Functions
+    // ============================================
+    
+    /**
+     * Updates the state display panel.
+     */
+    function updateStateDisplay() {
+      const display = DOMHelper.query( '#stateDisplay' );
+      const stateData = {
+        ...state.getAll(),
+        selectedCount: selector.getCount(),
+        selectedItems: selector.getSelected()
+      };
+      display.textContent = JSON.stringify( stateData, null, 2 );
+    }
+    
+    /**
+     * Updates delete button state.
+     */
+    function updateDeleteButton() {
+      const btn = DOMHelper.query( '#deleteSelected' );
+      btn.disabled = selector.getCount() === 0;
+      btn.textContent = `Delete Selected (${selector.getCount()})`;
+    }
+    
+    /**
+     * Loads images from API and renders to gallery.
+     */
+    async function loadImages() {
+      const gallery = DOMHelper.query( '#gallery' );
+      const limit = state.get( 'limit' );
+      const offset = state.get( 'offset' );
+      
+      // Clear gallery
+      DOMHelper.clear( gallery );
+      
+      // Create placeholder images using Lorem Picsum
+      const images = [];
+      for( let i = offset; i < offset + limit; i++ ) {
+        const imageId = 100 + i;
+        
+        const img = DOMHelper.img( `https://picsum.photos/200/300?random=${imageId}`, {
+          data: { id: imageId },
+          attrs: {
+            alt: `Image ${imageId}`,
+            loading: 'lazy'
+          },
+          events: {
+            click: function( e ) {
+              // Only allow single-click selection when not in drag mode
+              if( !selector.isDragging ) {
+                const itemId = this.dataset.id;
+                selector.toggle( itemId, this );
+              }
+            }
+          }
+        } );
+        
+        // Restore selected state if previously selected
+        if( selector.isSelected( String( imageId ) ) ) {
+          img.classList.add( 'selected' );
+        }
+        
+        images.push( img );
+      }
+      
+      // Append all images using fragment for performance
+      const fragment = DOMHelper.fragment( images );
+      gallery.appendChild( fragment );
+      
+      updateStateDisplay();
+    }
+    
+    /**
+     * Handles delete selected action.
+     */
+    function deleteSelected() {
+      const selected = selector.getSelected();
+      if( selected.length === 0 ) return;
+      
+      if( confirm( `Delete ${selected.length} selected image(s)?` ) ) {
+        console.log( 'Would delete:', selected );
+        
+        // In a real app, you'd call the API here:
+        // await api.delete( 'delete.php', { filenames: selected } );
+        
+        selector.deselectAll();
+        alert( `Deleted ${selected.length} images (simulated)` );
+      }
+    }
+    
+    
+    // ============================================
+    // Event Handlers
+    // ============================================
+    
+    // Select All button
+    DOMHelper.query( '#selectAll' ).addEventListener( 'click', () => {
+      selector.selectAll();
+    } );
+    
+    // Deselect All button
+    DOMHelper.query( '#deselectAll' ).addEventListener( 'click', () => {
+      selector.deselectAll();
+    } );
+    
+    // Delete Selected button
+    DOMHelper.query( '#deleteSelected' ).addEventListener( 'click', deleteSelected );
+    
+    // Limit input
+    DOMHelper.query( '#limitInput' ).addEventListener( 'change', ( e ) => {
+      const limit = parseInt( e.target.value );
+      state.set( 'limit', limit );
+      loadImages();
+    } );
+    
+    // Load More button
+    DOMHelper.query( '#loadMore' ).addEventListener( 'click', () => {
+      const limit = state.get( 'limit' );
+      const offset = state.get( 'offset' );
+      state.set( 'offset', offset + limit );
+      loadImages();
+    } );
+    
+    // Reset State button
+    DOMHelper.query( '#resetState' ).addEventListener( 'click', () => {
+      if( confirm( 'Reset all state to defaults?' ) ) {
+        state.clear();
+        selector.deselectAll();
+        DOMHelper.query( '#limitInput' ).value = state.get( 'limit' );
+        loadImages();
+      }
+    } );
+    
+    // Listen for state changes
+    state.onChange( 'limit', ( newValue ) => {
+      console.log( 'Limit changed to:', newValue );
+      updateStateDisplay();
+    } );
+    
+    state.onChange( 'offset', ( newValue ) => {
+      console.log( 'Offset changed to:', newValue );
+      updateStateDisplay();
+    } );
+    
+    
+    // ============================================
+    // Initialize
+    // ============================================
+    
+    // Enable image selector
+    const gallery = DOMHelper.query( '#gallery' );
+    selector.enable( gallery );
+    
+    // Load initial images
+    loadImages();
+    
+    // Set initial limit input value
+    DOMHelper.query( '#limitInput' ).value = state.get( 'limit' );
+  </script>
+</body>
+</html>
