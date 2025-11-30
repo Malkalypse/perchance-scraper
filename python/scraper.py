@@ -81,14 +81,14 @@ class DatabaseManager:
         if prompt_hash in self.positive_prompt_cache:
             return self.positive_prompt_cache[prompt_hash]
         
-        self.cursor.execute('SELECT id FROM positive_prompts WHERE prompt_hash = %s', (prompt_hash,))
+        self.cursor.execute('SELECT id FROM positive_prompts WHERE hash = %s', (prompt_hash,))
         result = self.cursor.fetchone()
         
         if result:
             prompt_id = result[0]
         else:
             self.cursor.execute(
-                'INSERT INTO positive_prompts (prompt_hash, prompt_text) VALUES (%s, %s)',
+                'INSERT INTO positive_prompts (hash, prompt_text) VALUES (%s, %s)',
                 (prompt_hash, prompt_text)
             )
             prompt_id = self.cursor.lastrowid
@@ -106,14 +106,14 @@ class DatabaseManager:
         if prompt_hash in self.negative_prompt_cache:
             return self.negative_prompt_cache[prompt_hash]
         
-        self.cursor.execute('SELECT id FROM negative_prompts WHERE prompt_hash = %s', (prompt_hash,))
+        self.cursor.execute('SELECT id FROM negative_prompts WHERE hash = %s', (prompt_hash,))
         result = self.cursor.fetchone()
         
         if result:
             prompt_id = result[0]
         else:
             self.cursor.execute(
-                'INSERT INTO negative_prompts (prompt_hash, prompt_text) VALUES (%s, %s)',
+                'INSERT INTO negative_prompts (hash, prompt_text) VALUES (%s, %s)',
                 (prompt_hash, prompt_text)
             )
             prompt_id = self.cursor.lastrowid
@@ -129,14 +129,14 @@ class DatabaseManager:
         if combination_hash in self.prompt_combination_cache:
             return self.prompt_combination_cache[combination_hash]
         
-        self.cursor.execute('SELECT id FROM prompt_combinations WHERE combination_hash = %s', (combination_hash,))
+        self.cursor.execute('SELECT id FROM prompt_combinations WHERE hash = %s', (combination_hash,))
         result = self.cursor.fetchone()
         
         if result:
             combo_id = result[0]
         else:
             self.cursor.execute(
-                'INSERT INTO prompt_combinations (positive_prompt_id, negative_prompt_id, combination_hash) VALUES (%s, %s, %s)',
+                'INSERT INTO prompt_combinations (positive_prompt_id, negative_prompt_id, hash) VALUES (%s, %s, %s)',
                 (positive_prompt_id, negative_prompt_id, combination_hash)
             )
             combo_id = self.cursor.lastrowid
@@ -177,14 +177,14 @@ class DatabaseManager:
         if title_hash in self.title_cache:
             return self.title_cache[title_hash]
         
-        self.cursor.execute('SELECT id FROM titles WHERE title_hash = %s', (title_hash,))
+        self.cursor.execute('SELECT id FROM titles WHERE hash = %s', (title_hash,))
         result = self.cursor.fetchone()
         
         if result:
             title_id = result[0]
         else:
             self.cursor.execute(
-                'INSERT INTO titles (title_hash, title_text) VALUES (%s, %s)',
+                'INSERT INTO titles (hash, title_text) VALUES (%s, %s)',
                 (title_hash, title_text)
             )
             title_id = self.cursor.lastrowid

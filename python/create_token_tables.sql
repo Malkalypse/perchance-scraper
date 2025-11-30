@@ -5,8 +5,8 @@ DROP TABLE IF EXISTS tokens;
 CREATE TABLE tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
     token TEXT NOT NULL,
-    token_hash VARCHAR(64) NOT NULL UNIQUE,
-    INDEX idx_token_hash (token_hash)
+    hash VARCHAR(64) NOT NULL UNIQUE,
+    INDEX idx_hash (hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Create positive_prompt_tokens junction table

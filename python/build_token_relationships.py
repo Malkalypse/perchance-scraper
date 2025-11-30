@@ -45,7 +45,7 @@ def get_or_create_token( cursor, token_text, token_cache ):
         return token_cache[token_hash]
     
     # Try to find existing token
-    cursor.execute( "SELECT id FROM tokens WHERE token_hash = %s", (token_hash,) )
+    cursor.execute( "SELECT id FROM tokens WHERE hash = %s", (token_hash,) )
     result = cursor.fetchone()
     
     if result:
@@ -54,13 +54,13 @@ def get_or_create_token( cursor, token_text, token_cache ):
         # Insert new token
         try:
             cursor.execute(
-                "INSERT INTO tokens (token, token_hash) VALUES (%s, %s)",
+                "INSERT INTO tokens (token, hash) VALUES (%s, %s)",
                 (token_text, token_hash)
             )
             token_id = cursor.lastrowid
         except mysql.connector.IntegrityError:
             # Handle race condition - token was inserted by another process
-            cursor.execute( "SELECT id FROM tokens WHERE token_hash = %s", (token_hash,) )
+            cursor.execute( "SELECT id FROM tokens WHERE hash = %s", (token_hash,) )
             token_id = cursor.fetchone()[0]
     
     token_cache[token_hash] = token_id
@@ -86,13 +86,13 @@ def full_rebuild( cursor, db ):
     # Get all prompts
     print( "Loading prompts..." )
     cursor.execute( """
-        SELECT id, prompt_text, prompt_hash
+        SELECT id, prompt_text
         FROM positive_prompts
     """ )
     positive_prompts = cursor.fetchall()
     
     cursor.execute( """
-        SELECT id, prompt_text, prompt_hash
+        SELECT id, prompt_text
         FROM negative_prompts
     """ )
     negative_prompts = cursor.fetchall()
@@ -105,7 +105,7 @@ def full_rebuild( cursor, db ):
     
     # Process positive prompts
     positive_relationships = []
-    for prompt_id, prompt_text, _ in positive_prompts:
+    for prompt_id, prompt_text in positive_prompts:
         tokens = extract_tokens( prompt_text )
         for token_text in tokens:
             token_id = get_or_create_token( cursor, token_text, token_cache )
@@ -113,7 +113,7 @@ def full_rebuild( cursor, db ):
     
     # Process negative prompts
     negative_relationships = []
-    for prompt_id, prompt_text, _ in negative_prompts:
+    for prompt_id, prompt_text in negative_prompts:
         tokens = extract_tokens( prompt_text )
         for token_text in tokens:
             token_id = get_or_create_token( cursor, token_text, token_cache )

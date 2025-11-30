@@ -93,11 +93,11 @@ if( $sortMode === 'style' ) {
         $sql .= " LIMIT " . intval( $limit ) . " OFFSET " . intval( $offset );
     }
 } else if( $sortMode === 'prompt' ) {
-    // For prompt sorting, group by prompt_hash to handle duplicates properly
+    // For prompt sorting, group by hash to handle duplicates properly
     
-    // First, get the distinct prompt_hashes for this page
+    // First, get the distinct hashes for this page
     $groupSql = "
-        SELECT pp.prompt_hash
+        SELECT pp.hash
         FROM images i
         JOIN prompt_combinations pc ON i.prompt_combination_id = pc.id
         LEFT JOIN positive_prompts pp ON pc.positive_prompt_id = pp.id
@@ -131,7 +131,7 @@ if( $sortMode === 'style' ) {
         }
     }
     
-    $groupSql .= " GROUP BY pp.prompt_hash ORDER BY MIN(pp.prompt_text) ASC";
+    $groupSql .= " GROUP BY pp.hash ORDER BY MIN(pp.prompt_text) ASC";
     
     if( $searchTerm !== '' ) {
         // When searching, only apply limit if searchLimit is explicitly set
@@ -152,7 +152,7 @@ if( $sortMode === 'style' ) {
     
     $promptHashes = [];
     while( $row = $groupResult->fetch_assoc() ) {
-        $promptHashes[] = "'" . $db->real_escape_string( $row['prompt_hash'] ) . "'";
+        $promptHashes[] = "'" . $db->real_escape_string( $row['hash'] ) . "'";
     }
     
     if( empty( $promptHashes ) ) {
@@ -160,8 +160,8 @@ if( $sortMode === 'style' ) {
         exit;
     }
     
-    // Now get all images with these prompt_hashes
-    $sql .= " AND pp.prompt_hash IN (" . implode( ',', $promptHashes ) . ")";
+    // Now get all images with these hashes
+    $sql .= " AND pp.hash IN (" . implode( ',', $promptHashes ) . ")";
     $sql .= " GROUP BY i.id";
     $sql .= " ORDER BY pp.prompt_text ASC, i.id DESC";
     

@@ -66,7 +66,7 @@ class OptimalNormalizedDatabaseMigration:
         self.cursor.execute( '''
             CREATE TABLE IF NOT EXISTS positive_prompts (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                prompt_hash VARCHAR(64) UNIQUE NOT NULL,
+                hash VARCHAR(64) UNIQUE NOT NULL,
                 prompt_text TEXT NOT NULL,
                 FULLTEXT INDEX idx_prompt_text (prompt_text)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -76,7 +76,7 @@ class OptimalNormalizedDatabaseMigration:
         self.cursor.execute( '''
             CREATE TABLE IF NOT EXISTS negative_prompts (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                prompt_hash VARCHAR(64) UNIQUE NOT NULL,
+                hash VARCHAR(64) UNIQUE NOT NULL,
                 prompt_text TEXT NOT NULL,
                 FULLTEXT INDEX idx_prompt_text (prompt_text)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -88,7 +88,7 @@ class OptimalNormalizedDatabaseMigration:
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 positive_prompt_id INT,
                 negative_prompt_id INT,
-                combination_hash VARCHAR(64) UNIQUE NOT NULL,
+                hash VARCHAR(64) UNIQUE NOT NULL,
                 FOREIGN KEY (positive_prompt_id) REFERENCES positive_prompts(id) ON DELETE CASCADE,
                 FOREIGN KEY (negative_prompt_id) REFERENCES negative_prompts(id) ON DELETE CASCADE,
                 INDEX idx_positive_prompt_id (positive_prompt_id),
@@ -100,7 +100,7 @@ class OptimalNormalizedDatabaseMigration:
         self.cursor.execute( '''
             CREATE TABLE IF NOT EXISTS titles (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                title_hash VARCHAR(64) UNIQUE NOT NULL,
+                hash VARCHAR(64) UNIQUE NOT NULL,
                 title_text TEXT NOT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ''' )
@@ -182,7 +182,7 @@ class OptimalNormalizedDatabaseMigration:
             return self.title_cache[title_hash]
         
         # Try to find existing
-        self.cursor.execute( 'SELECT id FROM titles WHERE title_hash = %s', ( title_hash, ) )
+        self.cursor.execute( 'SELECT id FROM titles WHERE hash = %s', ( title_hash, ) )
         result = self.cursor.fetchone()
         
         if result:
@@ -190,7 +190,7 @@ class OptimalNormalizedDatabaseMigration:
         else:
             # Create new
             self.cursor.execute(
-                'INSERT INTO titles (title_hash, title_text) VALUES (%s, %s)',
+                'INSERT INTO titles (hash, title_text) VALUES (%s, %s)',
                 ( title_hash, title_text )
             )
             title_id = self.cursor.lastrowid
@@ -211,7 +211,7 @@ class OptimalNormalizedDatabaseMigration:
             return self.positive_prompt_cache[prompt_hash]
         
         # Try to find existing
-        self.cursor.execute( 'SELECT id FROM positive_prompts WHERE prompt_hash = %s', ( prompt_hash, ) )
+        self.cursor.execute( 'SELECT id FROM positive_prompts WHERE hash = %s', ( prompt_hash, ) )
         result = self.cursor.fetchone()
         
         if result:
@@ -219,7 +219,7 @@ class OptimalNormalizedDatabaseMigration:
         else:
             # Create new
             self.cursor.execute(
-                'INSERT INTO positive_prompts (prompt_hash, prompt_text) VALUES (%s, %s)',
+                'INSERT INTO positive_prompts (hash, prompt_text) VALUES (%s, %s)',
                 ( prompt_hash, prompt_text )
             )
             prompt_id = self.cursor.lastrowid
@@ -240,7 +240,7 @@ class OptimalNormalizedDatabaseMigration:
             return self.negative_prompt_cache[prompt_hash]
         
         # Try to find existing
-        self.cursor.execute( 'SELECT id FROM negative_prompts WHERE prompt_hash = %s', ( prompt_hash, ) )
+        self.cursor.execute( 'SELECT id FROM negative_prompts WHERE hash = %s', ( prompt_hash, ) )
         result = self.cursor.fetchone()
         
         if result:
@@ -248,7 +248,7 @@ class OptimalNormalizedDatabaseMigration:
         else:
             # Create new
             self.cursor.execute(
-                'INSERT INTO negative_prompts (prompt_hash, prompt_text) VALUES (%s, %s)',
+                'INSERT INTO negative_prompts (hash, prompt_text) VALUES (%s, %s)',
                 ( prompt_hash, prompt_text )
             )
             prompt_id = self.cursor.lastrowid
@@ -267,7 +267,7 @@ class OptimalNormalizedDatabaseMigration:
             return self.prompt_combination_cache[combination_hash]
         
         # Try to find existing
-        self.cursor.execute( 'SELECT id FROM prompt_combinations WHERE combination_hash = %s', ( combination_hash, ) )
+        self.cursor.execute( 'SELECT id FROM prompt_combinations WHERE hash = %s', ( combination_hash, ) )
         result = self.cursor.fetchone()
         
         if result:
@@ -275,7 +275,7 @@ class OptimalNormalizedDatabaseMigration:
         else:
             # Create new
             self.cursor.execute(
-                'INSERT INTO prompt_combinations (positive_prompt_id, negative_prompt_id, combination_hash) VALUES (%s, %s, %s)',
+                'INSERT INTO prompt_combinations (positive_prompt_id, negative_prompt_id, hash) VALUES (%s, %s, %s)',
                 ( positive_prompt_id, negative_prompt_id, combination_hash )
             )
             combo_id = self.cursor.lastrowid

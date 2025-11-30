@@ -41,9 +41,9 @@ Deduplicated positive prompts with hash-based lookups.
 ```sql
 CREATE TABLE positive_prompts (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    prompt_hash VARCHAR(64) UNIQUE NOT NULL,
+    hash VARCHAR(64) UNIQUE NOT NULL,
     prompt_text TEXT NOT NULL,
-    INDEX idx_prompt_hash (prompt_hash),
+    INDEX idx_hash (hash),
     FULLTEXT idx_prompt_text (prompt_text)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
@@ -58,9 +58,9 @@ Deduplicated negative prompts with hash-based lookups.
 ```sql
 CREATE TABLE negative_prompts (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    prompt_hash VARCHAR(64) UNIQUE NOT NULL,
+    hash VARCHAR(64) UNIQUE NOT NULL,
     prompt_text TEXT NOT NULL,
-    INDEX idx_prompt_hash (prompt_hash),
+    INDEX idx_hash (hash),
     FULLTEXT idx_prompt_text (prompt_text)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
@@ -77,12 +77,12 @@ CREATE TABLE prompt_combinations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     positive_prompt_id INT NOT NULL,
     negative_prompt_id INT,
-    combination_hash VARCHAR(64) UNIQUE NOT NULL,
+    hash VARCHAR(64) UNIQUE NOT NULL,
     FOREIGN KEY (positive_prompt_id) REFERENCES positive_prompts(id) ON DELETE CASCADE,
     FOREIGN KEY (negative_prompt_id) REFERENCES negative_prompts(id) ON DELETE CASCADE,
     INDEX idx_positive_prompt_id (positive_prompt_id),
     INDEX idx_negative_prompt_id (negative_prompt_id),
-    INDEX idx_combination_hash (combination_hash)
+    INDEX idx_hash (hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -96,9 +96,9 @@ Deduplicated image titles.
 ```sql
 CREATE TABLE titles (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    title_hash VARCHAR(64) UNIQUE NOT NULL,
+    hash VARCHAR(64) UNIQUE NOT NULL,
     title_text TEXT NOT NULL,
-    INDEX idx_title_hash (title_hash)
+    INDEX idx_hash (hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -192,8 +192,8 @@ Token extraction system for prompt analysis using relational architecture.
 CREATE TABLE tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
     token TEXT NOT NULL,
-    token_hash VARCHAR(64) NOT NULL UNIQUE,
-    INDEX idx_token_hash (token_hash)
+    hash VARCHAR(64) NOT NULL UNIQUE,
+    INDEX idx_hash (hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Junction table linking tokens to positive prompts
