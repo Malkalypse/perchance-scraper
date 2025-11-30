@@ -28,7 +28,7 @@ def find_common_substrings( strings ):
 
 def main():
     # Load results
-    with open( 'data/results.json', 'r', encoding='utf-8' ) as f:
+    with open( '../data/results.json', 'r', encoding='utf-8' ) as f:
         data = json.load( f )
     
     # Group prompts by art_style, filtering out prompts over 3000 characters
@@ -62,10 +62,10 @@ def main():
             print( f"  → {common[:100]}{'...' if len( common ) > 100 else ''}" )
     
     # Save results
-    with open( 'data/style_prompts.json', 'w', encoding='utf-8' ) as f:
+    with open( '../data/style_prompts.json', 'w', encoding='utf-8' ) as f:
         json.dump( results, f, ensure_ascii=False, indent=2 )
     
-    print( f"\nProcessed {len( results )} styles. Results saved to data/style_prompts.json" )
+    print( f"\nProcessed {len( results )} styles. Results saved to ../data/style_prompts.json" )
 
 if __name__ == "__main__":
     main()

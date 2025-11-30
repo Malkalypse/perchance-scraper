@@ -2,7 +2,7 @@ import json
 import re
 
 # Read the corrupted file
-with open( 'data/results.json', 'r', encoding='utf-8' ) as f:
+with open( '../data/results.json', 'r', encoding='utf-8' ) as f:
     content = f.read()
 
 # Find where the corruption starts (Extra data error at char 176495838)
@@ -47,12 +47,12 @@ try:
     print( f"Successfully parsed {len( data )} items" )
     
     # Save backup
-    with open( 'data/results.json.backup', 'w', encoding='utf-8' ) as f:
+    with open( '../data/results.json.backup', 'w', encoding='utf-8' ) as f:
         f.write( content )
-    print( "Saved backup to data/results.json.backup" )
+    print( "Saved backup to ../data/results.json.backup" )
     
     # Save repaired file
-    with open( 'data/results.json', 'w', encoding='utf-8' ) as f:
+    with open( '../data/results.json', 'w', encoding='utf-8' ) as f:
         json.dump( data, f, ensure_ascii=False, indent=2 )
     print( f"Saved repaired file with {len( data )} items" )
     
@@ -72,7 +72,7 @@ except Exception as e:
             print( f"Successfully parsed {len( data )} items" )
             
             # Save repaired
-            with open( 'data/results.json', 'w', encoding='utf-8' ) as f:
+            with open( '../data/results.json', 'w', encoding='utf-8' ) as f:
                 json.dump( data, f, ensure_ascii=False, indent=2 )
             print( f"Saved repaired file with {len( data )} items" )
         except Exception as e2:

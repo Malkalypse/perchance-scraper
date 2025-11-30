@@ -2,6 +2,12 @@
 data/
 images/
 
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # Python
 __pycache__/
 *.py[cod]

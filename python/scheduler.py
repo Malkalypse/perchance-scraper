@@ -4,8 +4,8 @@ from datetime import datetime
 from send2trash import send2trash   # pip install Send2Trash
 import pathlib
 
-FULL_DIR = "images/full"
-MEDIUM_DIR = "images/medium"
+FULL_DIR = "../images/full"
+MEDIUM_DIR = "../images/medium"
 
 def delete_file( filename, folder ):
     path = os.path.join( folder, filename )
@@ -15,7 +15,7 @@ def delete_file( filename, folder ):
 
 def run_scheduler():
     # Load metadata
-    with open( "data/results.json", "r", encoding="utf-8" ) as f:
+    with open( "../data/results.json", "r", encoding="utf-8" ) as f:
         results = json.load( f )
 
     today = datetime.now().date()

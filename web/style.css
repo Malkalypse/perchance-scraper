@@ -1,0 +1,213 @@
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  font-size: 0.9em;
+  color: rgb(216, 212, 207);
+  background-color: rgb(19, 21, 22);
+}
+
+
+/* ============================================
+   TOOLBAR COMPONENT
+   ============================================ */
+
+#toolbar {
+  overflow: visible;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  min-height: fit-content;
+  background: #f7f7f7;
+  color: black;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.1em;
+  z-index: 1000;
+}
+
+/* Control groups within toolbar */
+.controls {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  padding: 0.9em;
+  margin: 0.1em;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+/* Input sizing */
+#limit, #page, #searchLimit {
+  width: 8ch;
+}
+
+/* Toolbar labels */
+label[for="wholeWords"],
+label[for="imagesOnly"] {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+
+
+/* ============================================
+   SEARCH COMPONENT
+   ============================================ */
+
+#searchBox {
+  position: relative;
+  display: inline-block;
+}
+
+#searchBox #pageInfo {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 1px;
+  font-size: 0.7em;
+  color: #666;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+
+/* ============================================
+   BUTTON COMPONENTS
+   ============================================ */
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Select All button with reserved width */
+#selectAll {
+  position: relative;
+}
+
+#selectAll::before {
+  content: "Unselect All";
+  visibility: hidden;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+#selectAll > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+
+/* ============================================
+   GALLERY COMPONENT
+   ============================================ */
+
+.card {
+  border: 1px solid #ccc;
+  margin: 1em;
+  padding: 0.5em;
+  margin-bottom: 0;
+  display: flex;
+  gap: 1em;
+  align-items: flex-start;
+}
+
+/* Card left side - images */
+.card-left {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.card-left input[type="checkbox"] {
+  align-self: center;
+}
+
+.card-left img {
+  max-width: 300px;
+  display: block;
+  cursor: pointer;
+}
+
+/* Card right side - metadata */
+.card-right {
+  flex: 1;
+  overflow-wrap: break-word;
+}
+
+.card-right p {
+  margin: 0.5em 0;
+}
+
+
+/* ============================================
+   IMAGE SELECTION
+   ============================================ */
+
+img.selected {
+  box-shadow: 0 0 0 2px black, 0 0 0 6px white;
+}
+
+
+/* ============================================
+   TAGS COMPONENT
+   ============================================ */
+
+.tags-container {
+  display: flex;
+  gap: 0.5em;
+  margin-top: 1em;
+  width: 100%;
+}
+
+.tags-container button {
+  flex: 0 0 auto;
+  padding: 0.5em 1em;
+}
+
+.tags-container input {
+  flex: 1;
+  padding: 0.25em;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+
+/* ============================================
+   IMAGES-ONLY MODE
+   ============================================ */
+
+.images-only .card-right {
+  display: none !important;
+}
+
+.images-only #gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+}
+
+.images-only .card {
+  margin: 0;
+  padding: 0;
+  border: none;
+  width: auto;
+}
+
+.images-only .card-left {
+  gap: 0;
+}

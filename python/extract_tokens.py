@@ -31,8 +31,8 @@ def main():
     print( "Loading data files..." )
     
     # Load results and style strings
-    results = load_json( 'data/results.json' )
-    style_prompts = load_json( 'data/style_prompts.json' )
+    results = load_json( '../data/results.json' )
+    style_prompts = load_json( '../data/style_prompts.json' )
     
     # Build lookup for style strings
     style_strings = {}
@@ -82,9 +82,9 @@ def main():
     }
     
     # Save to file
-    save_json( 'data/tokens.json', output )
+    save_json( '../data/tokens.json', output )
     
-    print( f"\nResults saved to data/tokens.json" )
+    print( f"\nResults saved to ../data/tokens.json" )
     print( f"  Unique prompt tokens: {output['stats']['unique_prompt_tokens']}" )
     print( f"  Unique negative prompt tokens: {output['stats']['unique_negative_tokens']}" )
     print( f"  Total prompt token occurrences: {output['stats']['total_prompt_occurrences']}" )

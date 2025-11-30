@@ -3,3 +3,4 @@ beautifulsoup4
 Pillow
 send2trash
 requests
+mysql-connector-python

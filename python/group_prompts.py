@@ -3,14 +3,14 @@
 Group images by identical (prompt, negative_prompt) pairs.
 
 Usage:
-  python group_prompts.py --results data/results.json --images-dir images/medium --output data/grouped.json
+  python group_prompts.py --results ../data/results.json --images-dir ../images/medium --output ../data/grouped.json
   python group_prompts.py --make-folders --copy --limit 10
 
 Options:
-  --results PATH        Path to results.json (default: data/results.json)
-  --images-dir PATH     Directory containing image files (default: images/medium)
-  --output PATH         Output JSON file for group index (default: data/grouped.json)
-  --make-folders        Create per-group folders under images/groups/<hash>
+  --results PATH        Path to results.json (default: ../data/results.json)
+  --images-dir PATH     Directory containing image files (default: ../images/medium)
+  --output PATH         Output JSON file for group index (default: ../data/grouped.json)
+  --make-folders        Create per-group folders under ../images/groups/<hash>
   --copy                Copy image files into group folders (implies --make-folders)
   --limit N             Only process first N entries (debugging)
   --min-count N         Only include groups with at least N images (default: 2)
@@ -163,9 +163,9 @@ def create_group_folders( base_images: Path, groups: List[dict], copy: bool ) ->
 
 def parse_args( argv: List[str] ) -> argparse.Namespace:
     p = argparse.ArgumentParser( description="Group images by identical prompt + negative_prompt" )
-    p.add_argument( "--results", default="data/results.json" )
-    p.add_argument( "--images-dir", default="images/medium" )
-    p.add_argument( "--output", default="data/grouped.json" )
+    p.add_argument( "--results", default="../data/results.json" )
+    p.add_argument( "--images-dir", default="../images/medium" )
+    p.add_argument( "--output", default="../data/grouped.json" )
     p.add_argument( "--make-folders", action="store_true" )
     p.add_argument( "--copy", action="store_true", help="Copy images into folders (implies --make-folders)" )
     p.add_argument( "--limit", type=int )
