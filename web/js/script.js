@@ -375,7 +375,7 @@ async function loadData() {
  * Updates the delete button's disabled state based on selection count.
  */
 function updateDeleteButton() {
-  DOMHelper.query( '#deleteSelected' ).disabled = selector.getSelected().size === 0;
+  DOMHelper.query( '#deleteSelected' ).disabled = selector.getSelected().length === 0;
 }
 
 /**
@@ -395,8 +395,8 @@ function updateSelectAllButton() {
  */
 async function performDelete() {
   const selected = selector.getSelected();
-  if( selected.size === 0 ) return;
-  if( !confirm( `Delete ${selected.size} selected image(s)? Metadata will remain.` ) ) return;
+  if( selected.length === 0 ) return;
+  if( !confirm( `Delete ${selected.length} selected image(s)?` ) ) return;
 
   try {
     const result = await api.post( 'api/delete.php', { filenames: Array.from( selected ) } );
