@@ -68,6 +68,13 @@
 
   <div id="gallery"></div>
 
+  <!-- Load reusable classes -->
+  <script src="js/GalleryState.js"></script>
+  <script src="js/APIClient.js"></script>
+  <script src="js/DOMHelper.js"></script>
+  <script src="js/ImageSelector.js"></script>
+  
+  <!-- Load application script -->
   <script src="script.js"></script>
 </body>
 </html>
