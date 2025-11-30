@@ -15,7 +15,6 @@ import argparse
 import mysql.connector
 from mysql.connector import Error
 import hashlib
-from extract_tokens import incremental_update
 
 BASE_URL = "https://image-generation.perchance.org/gallery"
 
@@ -401,24 +400,20 @@ if __name__ == "__main__":
     # Skip grouping script - no longer needed with database
     print( "Database updated. Grouping is done dynamically via queries." )
     
-    # Update token counts if new items were added
+    # Update token relationships if new items were added
     if len( new_image_ids ) > 0:
-        print( f"\nUpdating token counts for {len(new_image_ids)} new images..." )
-        # Create a new connection with dictionary cursor for token extraction
-        token_conn = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='',
-            database='perchance_gallery',
-            charset='utf8mb4',
-            use_unicode=True
-        )
-        token_cursor = token_conn.cursor(dictionary=True)
+        print( f"\nUpdating token relationships for {len(new_image_ids)} new images..." )
+        import subprocess
         try:
-            incremental_update( token_cursor, token_conn, new_image_ids )
-            print( "Token counts updated successfully." )
-        except Exception as e:
-            print( f"Error updating tokens: {e}" )
-        finally:
-            token_cursor.close()
-            token_conn.close()
+            result = subprocess.run(
+                ['python', 'build_token_relationships.py', '--update'],
+                cwd='c:/xampp/htdocs/perchance-scraper/python',
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            print( "Token relationships updated successfully." )
+            print( result.stdout )
+        except subprocess.CalledProcessError as e:
+            print( f"Error updating token relationships: {e}" )
+            print( e.stderr )

@@ -185,19 +185,67 @@ CREATE TABLE image_tags (
 ---
 
 #### 9. `tokens`
-Word frequency analysis for prompts.
+Token extraction system for prompt analysis using relational architecture.
 
 ```sql
+-- Tokens table stores unique token text
 CREATE TABLE tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    token VARCHAR(255) UNIQUE NOT NULL,
-    positive_prompt_count INT DEFAULT 0,
-    negative_prompt_count INT DEFAULT 0,
-    INDEX idx_token (token)
+    token TEXT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    INDEX idx_token_hash (token_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction table linking tokens to positive prompts
+CREATE TABLE positive_prompt_tokens (
+    positive_prompt_id INT NOT NULL,
+    token_id INT NOT NULL,
+    PRIMARY KEY (positive_prompt_id, token_id),
+    FOREIGN KEY (positive_prompt_id) REFERENCES positive_prompts(id) ON DELETE CASCADE,
+    FOREIGN KEY (token_id) REFERENCES tokens(id) ON DELETE CASCADE,
+    INDEX idx_prompt (positive_prompt_id),
+    INDEX idx_token (token_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Junction table linking tokens to negative prompts
+CREATE TABLE negative_prompt_tokens (
+    negative_prompt_id INT NOT NULL,
+    token_id INT NOT NULL,
+    PRIMARY KEY (negative_prompt_id, token_id),
+    FOREIGN KEY (negative_prompt_id) REFERENCES negative_prompts(id) ON DELETE CASCADE,
+    FOREIGN KEY (token_id) REFERENCES tokens(id) ON DELETE CASCADE,
+    INDEX idx_prompt (negative_prompt_id),
+    INDEX idx_token (token_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Storage**: 54.19 MB for 186,499 unique tokens
+**Token Extraction:**
+- Tokens are extracted by splitting on delimiters: comma (`,`), period (`.`), and newline (`\n`)
+- Tokens are maximal strings between delimiters (e.g., "a slim naked man with a shaven bald head is strapped to a post" is ONE token)
+- All tokens are lowercased for case-insensitive matching
+- Token text stored as TEXT for unlimited length, hash used for fast lookups
+
+**Architecture Benefits:**
+- Counts computed dynamically via `COUNT(DISTINCT)` queries
+- CASCADE foreign keys automatically clean up relationships when images are deleted
+- No manual count maintenance required
+- Prevents count inconsistencies and zero-count remnants
+
+**Usage Example:**
+```sql
+-- Get top tokens by positive prompt usage
+SELECT t.token, 
+       COUNT(DISTINCT ppt.positive_prompt_id) as positive_count,
+       COUNT(DISTINCT npt.negative_prompt_id) as negative_count
+FROM tokens t
+LEFT JOIN positive_prompt_tokens ppt ON t.id = ppt.token_id
+LEFT JOIN negative_prompt_tokens npt ON t.id = npt.token_id
+GROUP BY t.id
+ORDER BY positive_count DESC
+LIMIT 20;
+```
+
+**Storage**: ~55 MB for 352,948 unique tokens with 2,133,433 relationships
 
 ---
 
