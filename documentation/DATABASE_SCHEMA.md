@@ -193,9 +193,7 @@ CREATE TABLE tokens (
     token VARCHAR(255) UNIQUE NOT NULL,
     positive_prompt_count INT DEFAULT 0,
     negative_prompt_count INT DEFAULT 0,
-    total_count INT GENERATED ALWAYS AS (positive_prompt_count + negative_prompt_count) STORED,
-    INDEX idx_token (token),
-    INDEX idx_total_count (total_count)
+    INDEX idx_token (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 

@@ -17,7 +17,7 @@ const state = new GalleryState( 'gallery', {
 } );
 
 // API client for server communication
-const api = new APIClient( 'api/' );
+const api = new APIClient();
 
 // Image selector for drag-to-select functionality
 const selector = new ImageSelector( {
@@ -58,6 +58,11 @@ if( state.get( 'imagesOnly' ) ) {
   document.body.classList.add( 'images-only' );
 }
 
+// Apply show-tags class to body if set
+if( state.get( 'showTags' ) ) {
+  document.body.classList.add( 'show-tags' );
+}
+
 // Enable selector if selectMode is active
 if( state.get( 'selectMode' ) ) {
   selector.enable( DOMHelper.query( '#gallery' ) );
@@ -70,13 +75,17 @@ if( state.get( 'selectMode' ) ) {
  * @param {string} tagsString - Comma-separated string of tags
  */
 async function updateTags( filename, tagsString ) {
+  console.log( 'updateTags called:', filename, tagsString );
   try {
-    const result = await api.post( 'update_tags.php', {
+    const result = await api.post( 'api/update_tags.php', {
       filename,
       tags: tagsString
     } );
-    
+
+    console.log( 'updateTags result:', result );
+
     if( result.success ) {
+      console.log( 'Tags updated successfully, reloading data...' );
       loadData(); // Reload to show updated tags
     } else {
       console.error( 'Error updating tags:', result.error );
@@ -127,10 +136,10 @@ function createImageElement( item ) {
     data: { filename: item.filename },
     styles: { maxWidth: '300px', cursor: 'pointer' },
     events: {
-      click: function() {
+      click: function () {
         // Skip if selectMode is active (handled by drag selection)
         if( state.get( 'selectMode' ) ) return;
-        
+
         selector.toggle( item.filename, this );
       }
     }
@@ -146,7 +155,7 @@ function createImageElement( item ) {
  */
 function renderMetadata( item, skipKeys = [] ) {
   const paragraphs = [];
-  
+
   for( const [key, value] of Object.entries( item ) ) {
     if( skipKeys.includes( key ) ) continue;
     if( key === 'negative_prompt' && !value ) continue;
@@ -157,7 +166,7 @@ function renderMetadata( item, skipKeys = [] ) {
       } )
     );
   }
-  
+
   return DOMHelper.fragment( paragraphs );
 }
 
@@ -180,7 +189,6 @@ function renderPromptMode( filtered, gallery ) {
   } );
 
   const imagesOnlyActive = state.get( 'imagesOnly' );
-  const showTags = state.get( 'showTags' );
 
   promptGroups.forEach( ( groupItems, prompt ) => {
     const card = DOMHelper.div( {
@@ -199,7 +207,7 @@ function renderPromptMode( filtered, gallery ) {
         class: 'card-right',
         children: renderMetadata( item, skipKeys )
       } );
-      
+
       card.appendChild( cardTop );
     }
 
@@ -224,8 +232,8 @@ function renderPromptMode( filtered, gallery ) {
         );
       }
 
-      // Add tags below image if images-only mode is active and show tags is checked
-      if( imagesOnlyActive && showTags ) {
+      // Add tags below image (always show in prompt mode, or in images-only mode)
+      if( !imagesOnlyActive || imagesOnlyActive ) {
         wrapper.appendChild(
           createTagInput( item, { width: '300px', marginTop: '0.5em' } )
         );
@@ -245,16 +253,6 @@ function renderPromptMode( filtered, gallery ) {
 
     card.appendChild( cardBottom );
 
-    // Add tags section after images if Show tags is checked and not in images-only mode
-    if( showTags && !imagesOnlyActive ) {
-      card.appendChild(
-        createTagInput( groupItems[0], {
-          marginTop: '-0.25em',
-          marginBottom: '0.5em'
-        } )
-      );
-    }
-
     gallery.appendChild( card );
   } );
 }
@@ -267,7 +265,6 @@ function renderPromptMode( filtered, gallery ) {
  */
 function renderNormalMode( filtered, gallery ) {
   const imagesOnlyActive = state.get( 'imagesOnly' );
-  const showTags = state.get( 'showTags' );
 
   filtered.forEach( item => {
     if( !item.prompt ) return; // skip stubs
@@ -280,8 +277,8 @@ function renderNormalMode( filtered, gallery ) {
     // Left side: image
     const cardLeftChildren = [createImageElement( item )];
 
-    // Add tags below image if images-only mode is active and show tags is checked
-    if( imagesOnlyActive && showTags ) {
+    // Add tags below image if images-only mode is active
+    if( imagesOnlyActive ) {
       cardLeftChildren.push(
         createTagInput( item, { width: '300px', marginTop: '0.5em' } )
       );
@@ -297,17 +294,15 @@ function renderNormalMode( filtered, gallery ) {
     // Right side: metadata (skip if images-only mode active)
     if( !imagesOnlyActive ) {
       const skipKeys = ['filename', 'date_downloaded', 'title', 'tags'];
-      const cardRightChildren = renderMetadata( item, skipKeys );
-
-      // Add tags section if Show tags is checked
-      if( showTags ) {
-        cardRightChildren.push( createTagInput( item ) );
-      }
 
       const cardRight = DOMHelper.div( {
-        class: 'card-right',
-        children: cardRightChildren
+        class: 'card-right'
       } );
+
+      cardRight.appendChild( renderMetadata( item, skipKeys ) );
+
+      // Always add tags section (CSS controls visibility)
+      cardRight.appendChild( createTagInput( item ) );
 
       card.appendChild( cardRight );
     }
@@ -349,6 +344,8 @@ async function loadData() {
     console.error( 'items is not an array:', items );
     return;
   }
+
+  //console.log( 'Loaded items sample (first item):', items[0] );
 
   const gallery = DOMHelper.query( '#gallery' );
   gallery.innerHTML = '';
@@ -516,15 +513,16 @@ DOMHelper.query( '#imagesOnly' ).addEventListener( 'change', () => {
 
 // Show tags toggle
 DOMHelper.query( '#tag' ).addEventListener( 'change', () => {
-  state.set( 'showTags', DOMHelper.query( '#tag' ).checked );
-  loadData();
+  const isChecked = DOMHelper.query( '#tag' ).checked;
+  state.set( 'showTags', isChecked );
+  document.body.classList.toggle( 'show-tags', isChecked );
 } );
 
 // Select mode toggle
 DOMHelper.query( '#selectMode' ).addEventListener( 'change', () => {
   const selectModeOn = DOMHelper.query( '#selectMode' ).checked;
   state.set( 'selectMode', selectModeOn );
-  
+
   if( selectModeOn ) {
     selector.enable( DOMHelper.query( '#gallery' ) );
   } else {

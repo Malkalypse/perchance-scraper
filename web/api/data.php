@@ -32,15 +32,16 @@ $sql = "
         t.title_text as title,
         i.seed,
         i.date_downloaded,
-        GROUP_CONCAT(DISTINCT tag.name ORDER BY tag.name ASC SEPARATOR ',') as tags
+        (SELECT GROUP_CONCAT(DISTINCT t2.name ORDER BY t2.name ASC SEPARATOR ',')
+         FROM image_tags it2
+         JOIN tags t2 ON it2.tag_id = t2.id
+         WHERE it2.image_id = i.id) as tags
     FROM images i
     LEFT JOIN prompt_combinations pc ON i.prompt_combination_id = pc.id
     LEFT JOIN positive_prompts pp ON pc.positive_prompt_id = pp.id
     LEFT JOIN negative_prompts np ON pc.negative_prompt_id = np.id
     LEFT JOIN art_styles a ON i.art_style_id = a.id
     LEFT JOIN titles t ON i.title_id = t.id
-    LEFT JOIN image_tags it ON i.id = it.image_id
-    LEFT JOIN tags tag ON it.tag_id = tag.id
     WHERE i.deleted = 0
 ";
 
@@ -49,7 +50,12 @@ if( $searchTerm !== '' ) {
     $searchEscaped = $db->real_escape_string( $searchTerm );
     
     if( $searchBy === 'tag' ) {
-        // Tag search
+        // Tag search - check if image has a tag matching the search
+        $sql .= " AND EXISTS (
+            SELECT 1 FROM image_tags it
+            JOIN tags tag ON it.tag_id = tag.id
+            WHERE it.image_id = i.id";
+        
         if( $wholeWords ) {
             // Whole word search on tag names using REGEXP
             $sql .= " AND tag.name REGEXP '[[:<:]]" . $searchEscaped . "[[:>:]]'";
@@ -57,6 +63,8 @@ if( $searchTerm !== '' ) {
             // Substring search on tag names using LIKE
             $sql .= " AND tag.name LIKE '%" . $searchEscaped . "%'";
         }
+        
+        $sql .= " )";
     } else {
         // Prompt search (default)
         if( $wholeWords ) {
@@ -93,8 +101,6 @@ if( $sortMode === 'style' ) {
         FROM images i
         JOIN prompt_combinations pc ON i.prompt_combination_id = pc.id
         LEFT JOIN positive_prompts pp ON pc.positive_prompt_id = pp.id
-        LEFT JOIN image_tags it ON i.id = it.image_id
-        LEFT JOIN tags tag ON it.tag_id = tag.id
         WHERE i.deleted = 0
     ";
     
@@ -102,12 +108,19 @@ if( $sortMode === 'style' ) {
         $searchEscaped = $db->real_escape_string( $searchTerm );
         
         if( $searchBy === 'tag' ) {
-            // Tag search
+            // Tag search - check if image has a tag matching the search
+            $groupSql .= " AND EXISTS (
+                SELECT 1 FROM image_tags it
+                JOIN tags tag ON it.tag_id = tag.id
+                WHERE it.image_id = i.id";
+            
             if( $wholeWords ) {
                 $groupSql .= " AND tag.name REGEXP '[[:<:]]" . $searchEscaped . "[[:>:]]'";
             } else {
                 $groupSql .= " AND tag.name LIKE '%" . $searchEscaped . "%'";
             }
+            
+            $groupSql .= " )";
         } else {
             // Prompt search
             if( $wholeWords ) {

@@ -26,7 +26,14 @@ class APIClient {
    * @returns {string} Full URL with query string
    */
   _buildURL( endpoint, params = {} ) {
-    const url = new URL( endpoint, this.baseURL );
+    // Handle relative URLs
+    let url;
+    if( this.baseURL ) {
+      url = new URL( endpoint, this.baseURL );
+    } else {
+      // For relative URLs, use current page as base
+      url = new URL( endpoint, window.location.href );
+    }
 
     // Add query parameters
     for( const [key, value] of Object.entries( params ) ) {

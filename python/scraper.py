@@ -15,6 +15,7 @@ import argparse
 import mysql.connector
 from mysql.connector import Error
 import hashlib
+from extract_tokens import incremental_update
 
 BASE_URL = "https://image-generation.perchance.org/gallery"
 
@@ -198,7 +199,7 @@ class DatabaseManager:
         return self.cursor.fetchone() is not None
     
     def insert_image(self, item):
-        """Insert a new image into the database."""
+        """Insert a new image into the database. Returns the new image ID."""
         # Get or create foreign key IDs
         positive_prompt_id = self.get_or_create_positive_prompt(item['prompt'])
         negative_prompt_id = self.get_or_create_negative_prompt(item['negative_prompt'])
@@ -221,6 +222,7 @@ class DatabaseManager:
         ))
         
         self.conn.commit()
+        return self.cursor.lastrowid  # Return the ID of the newly inserted image
 
 
 db = DatabaseManager()
@@ -353,6 +355,7 @@ if __name__ == "__main__":
         old_results = []
 
     new_results = []
+    new_image_ids = []  # Track IDs of newly inserted images
     skip = 0
 
     try:
@@ -367,8 +370,9 @@ if __name__ == "__main__":
                 if item["filename"] and item["filename"] not in known_files:
                     # Insert into database
                     try:
-                        db.insert_image(item)
+                        image_id = db.insert_image(item)
                         new_results.append(item)
+                        new_image_ids.append(image_id)  # Track the new image ID
                         known_files.add(item["filename"])
                         batch_new_count += 1
                     except Error as e:
@@ -396,3 +400,25 @@ if __name__ == "__main__":
     
     # Skip grouping script - no longer needed with database
     print( "Database updated. Grouping is done dynamically via queries." )
+    
+    # Update token counts if new items were added
+    if len( new_image_ids ) > 0:
+        print( f"\nUpdating token counts for {len(new_image_ids)} new images..." )
+        # Create a new connection with dictionary cursor for token extraction
+        token_conn = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='perchance_gallery',
+            charset='utf8mb4',
+            use_unicode=True
+        )
+        token_cursor = token_conn.cursor(dictionary=True)
+        try:
+            incremental_update( token_cursor, token_conn, new_image_ids )
+            print( "Token counts updated successfully." )
+        except Exception as e:
+            print( f"Error updating tokens: {e}" )
+        finally:
+            token_cursor.close()
+            token_conn.close()
