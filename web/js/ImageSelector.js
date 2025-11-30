@@ -206,10 +206,10 @@ class ImageSelector {
     if( !this.container ) {
       // No container set, just clear the selection set
       this.selected.clear();
-      this._notifyChange();
+      this.onChange( [] );
       return;
     }
-    
+
     const items = this.container.querySelectorAll( this.itemSelector );
     items.forEach( item => {
       const itemId = this._getItemId( item );
