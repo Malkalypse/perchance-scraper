@@ -63,6 +63,10 @@
     <div id="tag_controls" class="controls">
       <label for="tag"><input type="checkbox" id="tag">Show tags</label>
     </div>
+
+    <div id="tables_link_controls" class="controls">
+      <a href="tables.php" style="color: var(--link-color); text-decoration: none;">Tables →</a>
+    </div>
   </div>
   <!-- End Fixed Toolbar -->
 
