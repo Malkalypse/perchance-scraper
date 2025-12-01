@@ -1,20 +1,30 @@
 <?php
-// table_counts.php - API endpoint for fetching table row counts from cache
-header('Content-Type: application/json');
+/**
+ * Table Counts API Endpoint
+ * 
+ * Returns cached table row counts from JSON file.
+ * The cache is updated by update_table_counts.py and by various API endpoints
+ * after data modifications (using MAX(id) for instant queries).
+ * 
+ * Response format: {"art-styles": 80, "positive-prompts": 73151, ...}
+ */
 
-$cache_file = __DIR__ . '/table_counts.json';
+require_once __DIR__ . '/utils/db_utils.php';
+
+$cacheFile = __DIR__ . '/table_counts.json';
 
 // Check if cache file exists
-if (!file_exists($cache_file)) {
-    echo json_encode(['error' => 'Table counts cache not found. Run python/update_table_counts.py to generate it.']);
-    exit;
+if( !file_exists( $cacheFile ) ) {
+    sendErrorResponse( 'Table counts cache not found. Run python/update_table_counts.py to generate it.', 404 );
 }
 
 // Read and return cached counts
-$counts = file_get_contents($cache_file);
-if ($counts === false) {
-    echo json_encode(['error' => 'Failed to read table counts cache']);
-    exit;
+$counts = file_get_contents( $cacheFile );
+if( $counts === false ) {
+    sendErrorResponse( 'Failed to read table counts cache', 500 );
 }
 
+// Return raw JSON (already formatted)
+header( 'Content-Type: application/json' );
 echo $counts;
+
