@@ -37,4 +37,5 @@ desktop.ini
 # Temporary files
 *.tmp
 *.bak
-*.backup
+*.backupbackup_before_tag_compression_*.sql
+backup_before_tag_compression_*.sql

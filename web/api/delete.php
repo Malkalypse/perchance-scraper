@@ -52,13 +52,13 @@ if( !$stmt->execute() ) {
 $stmt->close();
 $db->close();
 
-// Update table counts cache
+// Update table counts cache (fast MAX queries)
 updateTableCountsCache();
 
 echo json_encode( ['success' => true] );
 
 /**
- * Update the table counts cache after images are deleted
+ * Update the table counts cache using fast MAX(id) queries
  */
 function updateTableCountsCache() {
     $cacheFile = __DIR__ . '/table_counts.json';
@@ -73,29 +73,24 @@ function updateTableCountsCache() {
         $db->set_charset( 'utf8mb4' );
         $counts = [];
         
-        // Art Styles count
-        $result = $db->query( "SELECT COUNT(DISTINCT ast.id) as count FROM art_styles ast LEFT JOIN images i ON i.art_style_id = ast.id WHERE i.id IS NOT NULL" );
-        $counts['art-styles'] = (int)$result->fetch_assoc()['count'];
+        // Use MAX(id) for instant counts
+        $result = $db->query( "SELECT MAX(id) as count FROM art_styles" );
+        $counts['art-styles'] = (int)($result->fetch_assoc()['count'] ?? 0);
         
-        // Positive Prompts count
-        $result = $db->query( "SELECT COUNT(DISTINCT pp.id) as count FROM positive_prompts pp LEFT JOIN prompt_combinations pc ON pc.positive_prompt_id = pp.id LEFT JOIN images i ON i.prompt_combination_id = pc.id WHERE i.id IS NOT NULL" );
-        $counts['positive-prompts'] = (int)$result->fetch_assoc()['count'];
+        $result = $db->query( "SELECT MAX(id) as count FROM positive_prompts" );
+        $counts['positive-prompts'] = (int)($result->fetch_assoc()['count'] ?? 0);
         
-        // Negative Prompts count
-        $result = $db->query( "SELECT COUNT(DISTINCT np.id) as count FROM negative_prompts np LEFT JOIN prompt_combinations pc ON pc.negative_prompt_id = np.id LEFT JOIN images i ON i.prompt_combination_id = pc.id WHERE i.id IS NOT NULL" );
-        $counts['negative-prompts'] = (int)$result->fetch_assoc()['count'];
+        $result = $db->query( "SELECT MAX(id) as count FROM negative_prompts" );
+        $counts['negative-prompts'] = (int)($result->fetch_assoc()['count'] ?? 0);
         
-        // Tags count
-        $result = $db->query( "SELECT COUNT(DISTINCT t.id) as count FROM tags t LEFT JOIN image_tags it ON it.tag_id = t.id WHERE it.image_id IS NOT NULL" );
-        $counts['tags'] = (int)$result->fetch_assoc()['count'];
+        $result = $db->query( "SELECT MAX(id) as count FROM tags" );
+        $counts['tags'] = (int)($result->fetch_assoc()['count'] ?? 0);
         
-        // Tokens count
-        $result = $db->query( "SELECT COUNT(DISTINCT t.id) as count FROM tokens t LEFT JOIN positive_prompt_tokens ppt ON ppt.token_id = t.id LEFT JOIN negative_prompt_tokens npt ON npt.token_id = t.id WHERE ppt.positive_prompt_id IS NOT NULL OR npt.negative_prompt_id IS NOT NULL" );
-        $counts['tokens'] = (int)$result->fetch_assoc()['count'];
+        $result = $db->query( "SELECT MAX(id) as count FROM tokens" );
+        $counts['tokens'] = (int)($result->fetch_assoc()['count'] ?? 0);
         
         $db->close();
         
-        // Write to cache file
         file_put_contents( $cacheFile, json_encode( $counts, JSON_PRETTY_PRINT ) );
         
     } catch( Exception $e ) {

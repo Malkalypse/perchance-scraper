@@ -263,12 +263,12 @@
     </div>
 
     <script>
-        // State management
-        let currentTable = 'art-styles';
+        // Load state from localStorage or use defaults
+        let currentTable = localStorage.getItem('tables_currentTable') || 'art-styles';
         let currentOffset = 0;
-        let currentLimit = 200;
-        let currentSortColumn = 'image_count'; // Default for art-styles, positive-prompts, negative-prompts, tags
-        let currentSortOrder = 'desc'; // Default sort order
+        let currentLimit = parseInt(localStorage.getItem('tables_currentLimit')) || 200;
+        let currentSortColumn = localStorage.getItem('tables_currentSortColumn') || 'image_count';
+        let currentSortOrder = localStorage.getItem('tables_currentSortOrder') || 'desc';
         
         // Cache for preloaded table data
         const tableCache = {
@@ -310,6 +310,11 @@
             }
             currentSortOrder = 'desc';
             
+            // Save to localStorage
+            localStorage.setItem('tables_currentTable', currentTable);
+            localStorage.setItem('tables_currentSortColumn', currentSortColumn);
+            localStorage.setItem('tables_currentSortOrder', currentSortOrder);
+            
             // Hide all containers
             containers.forEach(container => {
                 container.classList.remove('active');
@@ -346,6 +351,7 @@
         limitInput.addEventListener('change', function() {
             currentLimit = parseInt(this.value) || 200;
             currentOffset = 0;
+            localStorage.setItem('tables_currentLimit', currentLimit);
             loadTableData();
         });
 
@@ -369,6 +375,10 @@
                         currentSortColumn = sortColumn;
                         currentSortOrder = sortOrder;
                         currentOffset = 0; // Reset to first page when sorting
+                        
+                        // Save to localStorage
+                        localStorage.setItem('tables_currentSortColumn', currentSortColumn);
+                        localStorage.setItem('tables_currentSortOrder', currentSortOrder);
                         
                         updateSortIndicators();
                         loadTableData();
@@ -510,20 +520,38 @@
                 'tokens': 'positive_count'
             };
             
-            for (const tableName of tables) {
-                try {
-                    const sortColumn = sortDefaults[tableName];
-                    const response = await fetch(`api/tables_data.php?table=${tableName}&limit=${currentLimit}&offset=0&sort=${sortColumn}&order=desc`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (!data.error) {
-                            tableCache[tableName] = data;
+            // Preload tables in parallel with timeout
+            const promises = tables.map(tableName => {
+                return new Promise(async (resolve) => {
+                    try {
+                        const sortColumn = sortDefaults[tableName];
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                        
+                        const response = await fetch(
+                            `api/tables_data.php?table=${tableName}&limit=${currentLimit}&offset=0&sort=${sortColumn}&order=desc`,
+                            { signal: controller.signal }
+                        );
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (!data.error) {
+                                tableCache[tableName] = data;
+                            }
                         }
+                    } catch (error) {
+                        // Silently fail preloading - table will load on demand
+                        console.debug(`Skipped preloading ${tableName}:`, error.message);
                     }
-                } catch (error) {
-                    console.error(`Failed to preload ${tableName}:`, error);
-                }
-            }
+                    resolve();
+                });
+            });
+            
+            // Don't await all promises - let them complete in background
+            Promise.all(promises).then(() => {
+                console.debug('Preloading complete');
+            });
         }
         
         // Load table counts from cache
@@ -547,8 +575,21 @@
 
         // Load initial table
         window.addEventListener('DOMContentLoaded', async function() {
-            currentLimit = parseInt(limitInput.value) || 200;
+            // Set form values from localStorage
+            tableSelect.value = currentTable;
+            limitInput.value = currentLimit;
+            
             setupSortHandlers();
+            
+            // Show the selected table container
+            containers.forEach(container => {
+                container.classList.remove('active');
+            });
+            const selectedContainer = document.getElementById(currentTable + '-container');
+            if (selectedContainer) {
+                selectedContainer.classList.add('active');
+            }
+            
             updateSortIndicators();
             
             // Load table counts first (fast from cache)

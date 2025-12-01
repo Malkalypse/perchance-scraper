@@ -417,3 +417,20 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError as e:
             print( f"Error updating token relationships: {e}" )
             print( e.stderr )
+        
+        # Update table counts cache
+        print( "\nUpdating table counts cache..." )
+        try:
+            from pathlib import Path
+            script_dir = Path(__file__).parent
+            result = subprocess.run(
+                ['python', str(script_dir / 'update_table_counts.py')],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                print( result.stdout )
+            else:
+                print( f"Warning: Failed to update table counts cache: {result.stderr}" )
+        except Exception as e:
+            print( f"Warning: Could not update table counts cache: {e}" )

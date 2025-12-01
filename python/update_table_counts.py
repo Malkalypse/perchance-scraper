@@ -10,6 +10,7 @@ from pathlib import Path
 
 def get_table_counts():
     """Query database for table counts and return as dictionary."""
+    print("Connecting to database...")
     db = mysql.connector.connect(
         host='localhost',
         user='root',
@@ -21,52 +22,34 @@ def get_table_counts():
     counts = {}
     
     # Art Styles count
-    cursor.execute("""
-        SELECT COUNT(DISTINCT ast.id) as count 
-        FROM art_styles ast 
-        LEFT JOIN images i ON i.art_style_id = ast.id 
-        WHERE i.id IS NOT NULL
-    """)
-    counts['art-styles'] = cursor.fetchone()['count']
+    print("Counting art styles...", end='', flush=True)
+    cursor.execute("SELECT MAX(id) as count FROM art_styles")
+    counts['art-styles'] = cursor.fetchone()['count'] or 0
+    print(f" {counts['art-styles']:,}")
     
     # Positive Prompts count
-    cursor.execute("""
-        SELECT COUNT(DISTINCT pp.id) as count 
-        FROM positive_prompts pp 
-        LEFT JOIN prompt_combinations pc ON pc.positive_prompt_id = pp.id 
-        LEFT JOIN images i ON i.prompt_combination_id = pc.id 
-        WHERE i.id IS NOT NULL
-    """)
-    counts['positive-prompts'] = cursor.fetchone()['count']
+    print("Counting positive prompts...", end='', flush=True)
+    cursor.execute("SELECT MAX(id) as count FROM positive_prompts")
+    counts['positive-prompts'] = cursor.fetchone()['count'] or 0
+    print(f" {counts['positive-prompts']:,}")
     
     # Negative Prompts count
-    cursor.execute("""
-        SELECT COUNT(DISTINCT np.id) as count 
-        FROM negative_prompts np 
-        LEFT JOIN prompt_combinations pc ON pc.negative_prompt_id = np.id 
-        LEFT JOIN images i ON i.prompt_combination_id = pc.id 
-        WHERE i.id IS NOT NULL
-    """)
-    counts['negative-prompts'] = cursor.fetchone()['count']
+    print("Counting negative prompts...", end='', flush=True)
+    cursor.execute("SELECT MAX(id) as count FROM negative_prompts")
+    counts['negative-prompts'] = cursor.fetchone()['count'] or 0
+    print(f" {counts['negative-prompts']:,}")
     
     # Tags count
-    cursor.execute("""
-        SELECT COUNT(DISTINCT t.id) as count 
-        FROM tags t 
-        LEFT JOIN image_tags it ON it.tag_id = t.id 
-        WHERE it.image_id IS NOT NULL
-    """)
-    counts['tags'] = cursor.fetchone()['count']
+    print("Counting tags...", end='', flush=True)
+    cursor.execute("SELECT MAX(id) as count FROM tags")
+    counts['tags'] = cursor.fetchone()['count'] or 0
+    print(f" {counts['tags']:,}")
     
-    # Tokens count - only tokens that appear in at least one prompt
-    cursor.execute("""
-        SELECT COUNT(DISTINCT t.id) as count 
-        FROM tokens t 
-        LEFT JOIN positive_prompt_tokens ppt ON ppt.token_id = t.id 
-        LEFT JOIN negative_prompt_tokens npt ON npt.token_id = t.id 
-        WHERE ppt.positive_prompt_id IS NOT NULL OR npt.negative_prompt_id IS NOT NULL
-    """)
-    counts['tokens'] = cursor.fetchone()['count']
+    # Tokens count
+    print("Counting tokens...", end='', flush=True)
+    cursor.execute("SELECT MAX(id) as count FROM tokens")
+    counts['tokens'] = cursor.fetchone()['count'] or 0
+    print(f" {counts['tokens']:,}")
     
     cursor.close()
     db.close()
@@ -87,10 +70,7 @@ def save_counts_cache(counts):
     with open(cache_file, 'w', encoding='utf-8') as f:
         json.dump(counts, f, indent=2)
     
-    print(f"Table counts updated successfully:")
-    for table, count in counts.items():
-        print(f"  {table}: {count:,}")
-    print(f"\nCache saved to: {cache_file}")
+    print(f"\n✓ Cache saved to: {cache_file}")
 
 if __name__ == '__main__':
     try:

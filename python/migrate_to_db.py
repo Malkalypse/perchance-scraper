@@ -594,6 +594,23 @@ def main():
     print( f"Database: {args.database}" )
     print( f"Access via phpMyAdmin: http://localhost/phpmyadmin" )
     print( "="*60 )
+    
+    # Update table counts cache
+    print( "\nUpdating table counts cache..." )
+    try:
+        import subprocess
+        script_dir = Path(__file__).parent
+        result = subprocess.run(
+            ['python', str(script_dir / 'update_table_counts.py')],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print( result.stdout )
+        else:
+            print( f"Warning: Failed to update table counts cache: {result.stderr}" )
+    except Exception as e:
+        print( f"Warning: Could not update table counts cache: {e}" )
 
 
 if __name__ == '__main__':
