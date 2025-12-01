@@ -278,6 +278,18 @@
             'tags': null,
             'tokens': null
         };
+        
+        // Table counts (loaded from cache)
+        let tableCounts = {};
+        
+        // Table name formatting
+        const tableNames = {
+            'art-styles': 'art styles',
+            'positive-prompts': 'positive prompts',
+            'negative-prompts': 'negative prompts',
+            'tags': 'tags',
+            'tokens': 'tokens'
+        };
 
         // Handle table selection
         const tableSelect = document.getElementById('tableSelect');
@@ -398,7 +410,12 @@
             
             try {
                 loading.classList.add('active');
-                loading.innerHTML = `Loading ${currentTable.replace('-', ' ')}...<br><small style="font-size: 14px; color: var(--text-secondary);">(Please wait, this may take a moment)</small>`;
+                
+                // Show count in loading message if available
+                const count = tableCounts[currentTable];
+                const countText = count ? ` ${count.toLocaleString()}` : '';
+                const tableName = tableNames[currentTable] || currentTable.replace('-', ' ');
+                loading.innerHTML = `Loading${countText} ${tableName}...<br><small style="font-size: 14px; color: var(--text-secondary);">(Please wait, this may take a moment)</small>`;
                 
                 const response = await fetch(`api/tables_data.php?table=${currentTable}&limit=${currentLimit}&offset=${currentOffset}&sort=${currentSortColumn}&order=${currentSortOrder}`);
                 
@@ -508,6 +525,18 @@
                 }
             }
         }
+        
+        // Load table counts from cache
+        async function loadTableCounts() {
+            try {
+                const response = await fetch('api/table_counts.php');
+                if (response.ok) {
+                    tableCounts = await response.json();
+                }
+            } catch (error) {
+                console.warn('Failed to load table counts:', error);
+            }
+        }
 
         // Escape HTML to prevent XSS
         function escapeHtml(text) {
@@ -522,11 +551,14 @@
             setupSortHandlers();
             updateSortIndicators();
             
+            // Load table counts first (fast from cache)
+            await loadTableCounts();
+            
+            // Load the initial table
+            loadTableData();
+            
             // Start preloading all tables in the background
             preloadAllTables();
-            
-            // Load the initial table immediately
-            loadTableData();
         });
     </script>
 </body>
