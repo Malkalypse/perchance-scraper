@@ -1,7 +1,7 @@
 {
-    "art-styles": 80,
-    "positive-prompts": 73634,
-    "negative-prompts": 7162,
-    "tags": 65,
-    "tokens": 378705
+  "art-styles": 89,
+  "positive-prompts": 143933,
+  "negative-prompts": 13039,
+  "tags": 74,
+  "tokens": 709566
 }

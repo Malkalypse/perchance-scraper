@@ -72,7 +72,7 @@ def full_rebuild( cursor, db ):
     
     # Read and execute the schema file
     print( "Recreating tables..." )
-    with open( 'create_token_tables.sql', 'r', encoding='utf-8' ) as f:
+    with open( '../sql/create_token_tables.sql', 'r', encoding='utf-8' ) as f:
         sql_script = f.read()
     
     # Split by semicolons and execute each statement
@@ -122,21 +122,28 @@ def full_rebuild( cursor, db ):
     print( f"Created {len( token_cache )} unique tokens" )
     print( f"Building {len( positive_relationships )} positive prompt-token relationships..." )
     
-    # Bulk insert positive relationships
+    # Bulk insert positive relationships in batches
+    batch_size = 1000
     if positive_relationships:
-        cursor.executemany(
-            "INSERT IGNORE INTO positive_prompt_tokens (positive_prompt_id, token_id) VALUES (%s, %s)",
-            positive_relationships
-        )
+        for i in range( 0, len( positive_relationships ), batch_size ):
+            batch = positive_relationships[i:i + batch_size]
+            cursor.executemany(
+                "INSERT IGNORE INTO positive_prompt_tokens (positive_prompt_id, token_id) VALUES (%s, %s)",
+                batch
+            )
+            print( f"  Inserted batch {i // batch_size + 1} ({len( batch )} relationships)" )
     
     print( f"Building {len( negative_relationships )} negative prompt-token relationships..." )
     
-    # Bulk insert negative relationships
+    # Bulk insert negative relationships in batches
     if negative_relationships:
-        cursor.executemany(
-            "INSERT IGNORE INTO negative_prompt_tokens (negative_prompt_id, token_id) VALUES (%s, %s)",
-            negative_relationships
-        )
+        for i in range( 0, len( negative_relationships ), batch_size ):
+            batch = negative_relationships[i:i + batch_size]
+            cursor.executemany(
+                "INSERT IGNORE INTO negative_prompt_tokens (negative_prompt_id, token_id) VALUES (%s, %s)",
+                batch
+            )
+            print( f"  Inserted batch {i // batch_size + 1} ({len( batch )} relationships)" )
     
     db.commit()
     
@@ -193,20 +200,28 @@ def incremental_update( cursor, db ):
             token_id = get_or_create_token( cursor, token_text, token_cache )
             negative_relationships.append( (prompt_id, token_id) )
     
-    # Insert relationships
+    # Insert relationships in batches to avoid exceeding max_allowed_packet
+    batch_size = 1000
+    
     if positive_relationships:
-        print( f"Inserting {len( positive_relationships )} positive relationships..." )
-        cursor.executemany(
-            "INSERT IGNORE INTO positive_prompt_tokens (positive_prompt_id, token_id) VALUES (%s, %s)",
-            positive_relationships
-        )
+        print( f"Inserting {len( positive_relationships )} positive relationships in batches of {batch_size}..." )
+        for i in range( 0, len( positive_relationships ), batch_size ):
+            batch = positive_relationships[i:i + batch_size]
+            cursor.executemany(
+                "INSERT IGNORE INTO positive_prompt_tokens (positive_prompt_id, token_id) VALUES (%s, %s)",
+                batch
+            )
+            print( f"  Inserted batch {i // batch_size + 1} ({len( batch )} relationships)" )
     
     if negative_relationships:
-        print( f"Inserting {len( negative_relationships )} negative relationships..." )
-        cursor.executemany(
-            "INSERT IGNORE INTO negative_prompt_tokens (negative_prompt_id, token_id) VALUES (%s, %s)",
-            negative_relationships
-        )
+        print( f"Inserting {len( negative_relationships )} negative relationships in batches of {batch_size}..." )
+        for i in range( 0, len( negative_relationships ), batch_size ):
+            batch = negative_relationships[i:i + batch_size]
+            cursor.executemany(
+                "INSERT IGNORE INTO negative_prompt_tokens (negative_prompt_id, token_id) VALUES (%s, %s)",
+                batch
+            )
+            print( f"  Inserted batch {i // batch_size + 1} ({len( batch )} relationships)" )
     
     db.commit()
     

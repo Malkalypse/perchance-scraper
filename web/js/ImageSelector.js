@@ -1,33 +1,32 @@
-/**
- * Selection state management for image galleries.
+/** Selection state management for image galleries.
  * Handles single selection, multi-selection, and drag-to-select functionality.
  */
 class ImageSelector {
-  /**
-   * Creates a new ImageSelector instance.
+  /** Creates a new ImageSelector instance.
    * @param {Object} options - Configuration options
    * @param {string} options.selectedClass - CSS class for selected items (default: 'selected')
    * @param {string} options.itemSelector - Selector for selectable items (default: 'img')
    * @param {Function} options.onChange - Callback when selection changes
    */
   constructor( options = {} ) {
-    this.selectedClass = options.selectedClass || 'selected';
-    this.itemSelector = options.itemSelector || 'img';
-    this.onChange = options.onChange || ( () => { } );
+    this.selectedClass  = options.selectedClass || 'selected';
+    this.itemSelector   = options.itemSelector || 'img';
+    this.onChange       = options.onChange || ( () => { } );
 
-    this.selected = new Set();
-    this.isDragging = false;
-    this.dragSelecting = true;
-    this.enabled = false;
+    this.selected       = new Set();
+    this.isDragging     = false;
+    this.hasDragged     = false;
+    this.dragSelecting  = true;
+    this.mouseDownItem  = null;
+    this.enabled        = false;
 
     // Bind event handlers
     this._handleMouseDown = this._handleMouseDown.bind( this );
     this._handleMouseOver = this._handleMouseOver.bind( this );
-    this._handleMouseUp = this._handleMouseUp.bind( this );
+    this._handleMouseUp   = this._handleMouseUp.bind( this );
   }
 
-  /**
-   * Enables selection functionality.
+  /** Enables selection functionality.
    * @param {HTMLElement} container - Container element with selectable items
    */
   enable( container = document ) {
@@ -42,9 +41,7 @@ class ImageSelector {
     document.addEventListener( 'mouseup', this._handleMouseUp );
   }
 
-  /**
-   * Disables selection functionality.
-   */
+  /** Disables selection functionality. */
   disable() {
     if( !this.enabled ) return;
 
@@ -56,23 +53,27 @@ class ImageSelector {
     document.removeEventListener( 'mouseup', this._handleMouseUp );
   }
 
-  /**
-   * Handles mousedown event.
+  /** Handles mousedown event.
    * @private
    */
   _handleMouseDown( e ) {
+    // Only handle left mouse button
+    if( e.button !== 0 ) return;
+
     const item = e.target.closest( this.itemSelector );
 
     if( item && this.container.contains( item ) ) {
       e.preventDefault(); // Prevent text selection
-      this.isDragging = true;
+      this.isDragging     = true;
+      this.hasDragged     = false;
+      this.mouseDownItem  = item;
 
       const itemId = this._getItemId( item );
 
       // Determine if we're selecting or deselecting based on first item
       this.dragSelecting = !this.selected.has( itemId );
 
-      // Apply selection to first item immediately
+      // Apply action to first item immediately
       if( this.dragSelecting ) {
         this.select( itemId, item );
       } else {
@@ -80,40 +81,45 @@ class ImageSelector {
       }
     } else if( this.container.contains( e.target ) ) {
       // Clicked in container but not on item
-      this.isDragging = true;
-      this.dragSelecting = true;
+      this.isDragging     = true;
+      this.hasDragged     = false;
+      this.mouseDownItem  = null;
+      this.dragSelecting  = true;
     }
-  }
-
-  /**
-   * Handles mouseover event for drag selection.
+  }  /** Handles mouseover event for drag selection.
    * @private
    */
   _handleMouseOver( e ) {
     if( !this.isDragging ) return;
 
     const item = e.target.closest( this.itemSelector );
-    if( item && this.container.contains( item ) ) {
-      const itemId = this._getItemId( item );
 
-      if( this.dragSelecting ) {
-        this.select( itemId, item );
-      } else {
-        this.deselect( itemId, item );
+    // Check if we've moved to a different item (actual dragging)
+    if( item && item !== this.mouseDownItem ) {
+      this.hasDragged = true;
+
+      if( this.container.contains( item ) ) {
+        const itemId = this._getItemId( item );
+
+        if( this.dragSelecting ) {
+          this.select( itemId, item );
+        } else {
+          this.deselect( itemId, item );
+        }
       }
     }
   }
 
-  /**
-   * Handles mouseup event.
+  /** Handles mouseup event.
    * @private
    */
-  _handleMouseUp() {
-    this.isDragging = false;
+  _handleMouseUp( e ) {
+    this.isDragging     = false;
+    this.hasDragged     = false;
+    this.mouseDownItem  = null;
   }
 
-  /**
-   * Gets a unique identifier for an item.
+  /** Gets a unique identifier for an item.
    * @private
    * @param {HTMLElement} item - The item element
    * @returns {string} Item identifier
@@ -122,8 +128,7 @@ class ImageSelector {
     return item.dataset.id || item.dataset.filename || item.src || item.getAttribute( 'id' );
   }
 
-  /**
-   * Selects an item.
+  /** Selects an item.
    * @param {string} itemId - Item identifier
    * @param {HTMLElement} element - Item element (optional, for visual update)
    */
@@ -141,8 +146,7 @@ class ImageSelector {
     this.onChange( Array.from( this.selected ) );
   }
 
-  /**
-   * Deselects an item.
+  /** Deselects an item.
    * @param {string} itemId - Item identifier
    * @param {HTMLElement} element - Item element (optional, for visual update)
    */
@@ -160,8 +164,7 @@ class ImageSelector {
     this.onChange( Array.from( this.selected ) );
   }
 
-  /**
-   * Toggles selection for an item.
+  /** Toggles selection for an item.
    * @param {string} itemId - Item identifier
    * @param {HTMLElement} element - Item element (optional)
    */
@@ -173,8 +176,7 @@ class ImageSelector {
     }
   }
 
-  /**
-   * Updates visual state of an item.
+  /** Updates visual state of an item.
    * @private
    * @param {string} itemId - Item identifier
    * @param {boolean} selected - Whether item is selected
@@ -188,8 +190,7 @@ class ImageSelector {
     }
   }
 
-  /**
-   * Selects all items in the container.
+  /** Selects all items in the container.
    */
   selectAll() {
     const items = this.container.querySelectorAll( this.itemSelector );
@@ -199,8 +200,7 @@ class ImageSelector {
     } );
   }
 
-  /**
-   * Deselects all items.
+  /** Deselects all items.
    */
   deselectAll() {
     if( !this.container ) {
@@ -219,8 +219,7 @@ class ImageSelector {
     this.onChange( [] );
   }
 
-  /**
-   * Checks if an item is selected.
+  /** Checks if an item is selected.
    * @param {string} itemId - Item identifier
    * @returns {boolean} True if selected
    */
@@ -228,24 +227,21 @@ class ImageSelector {
     return this.selected.has( itemId );
   }
 
-  /**
-   * Gets all selected item IDs.
+  /** Gets all selected item IDs.
    * @returns {Array<string>} Array of selected item IDs
    */
   getSelected() {
     return Array.from( this.selected );
   }
 
-  /**
-   * Gets the count of selected items.
+  /** Gets the count of selected items.
    * @returns {number} Number of selected items
    */
   getCount() {
     return this.selected.size;
   }
 
-  /**
-   * Checks if all items are selected.
+  /** Checks if all items are selected.
    * @returns {boolean} True if all items are selected
    */
   isAllSelected() {
@@ -253,15 +249,13 @@ class ImageSelector {
     return items.length > 0 && items.length === this.selected.size;
   }
 
-  /**
-   * Clears selection state without triggering onChange.
+  /** Clears selection state without triggering onChange.
    */
   clear() {
     this.selected.clear();
   }
 
-  /**
-   * Restores selection state from an array of IDs.
+  /** Restores selection state from an array of IDs.
    * @param {Array<string>} itemIds - Array of item IDs to select
    */
   restore( itemIds ) {
@@ -270,8 +264,7 @@ class ImageSelector {
     this.onChange( Array.from( this.selected ) );
   }
 
-  /**
-   * Syncs visual state with internal selection state.
+  /** Syncs visual state with internal selection state.
    * @private
    */
   _syncVisuals() {

@@ -1,10 +1,8 @@
-/**
- * Universal localStorage manager for persisting application state.
+/** Universal localStorage manager for persisting application state.
  * Provides a clean API for getting/setting state with automatic serialization.
  */
 class GalleryState {
-  /**
-   * Creates a new GalleryState instance.
+  /** Creates a new GalleryState instance.
    * @param {string} storagePrefix - Prefix for localStorage keys to avoid collisions
    * @param {Object} defaults - Default values for state properties
    */
@@ -18,8 +16,7 @@ class GalleryState {
     this._loadState();
   }
 
-  /**
-   * Loads all state from localStorage.
+  /** Loads all state from localStorage.
    * @private
    */
   _loadState() {
@@ -33,8 +30,7 @@ class GalleryState {
     }
   }
 
-  /**
-   * Gets the full localStorage key with prefix.
+  /** Gets the full localStorage key with prefix.
    * @private
    * @param {string} key - The state key
    * @returns {string} Prefixed key
@@ -43,8 +39,7 @@ class GalleryState {
     return `${this.prefix}_${key}`;
   }
 
-  /**
-   * Deserializes a value from localStorage.
+  /** Deserializes a value from localStorage.
    * @private
    * @param {string} value - Serialized value
    * @returns {*} Deserialized value
@@ -57,8 +52,7 @@ class GalleryState {
     }
   }
 
-  /**
-   * Serializes a value for localStorage.
+  /** Serializes a value for localStorage.
    * @private
    * @param {*} value - Value to serialize
    * @returns {string} Serialized value
@@ -70,8 +64,7 @@ class GalleryState {
     return JSON.stringify( value );
   }
 
-  /**
-   * Gets a state value.
+  /** Gets a state value.
    * @param {string} key - The state key
    * @returns {*} The state value
    */
@@ -79,8 +72,7 @@ class GalleryState {
     return this.state[key];
   }
 
-  /**
-   * Sets a state value and persists to localStorage.
+  /** Sets a state value and persists to localStorage.
    * @param {string} key - The state key
    * @param {*} value - The value to set
    * @param {boolean} notify - Whether to notify listeners (default: true)
@@ -95,8 +87,7 @@ class GalleryState {
     }
   }
 
-  /**
-   * Sets multiple state values at once.
+  /** Sets multiple state values at once.
    * @param {Object} updates - Object with key-value pairs to update
    */
   setMany( updates ) {
@@ -109,8 +100,7 @@ class GalleryState {
     }
   }
 
-  /**
-   * Removes a state value.
+  /** Removes a state value.
    * @param {string} key - The state key
    */
   remove( key ) {
@@ -118,8 +108,7 @@ class GalleryState {
     localStorage.removeItem( this._getKey( key ) );
   }
 
-  /**
-   * Clears all state (localStorage and memory).
+  /** Clears all state (localStorage and memory).
    */
   clear() {
     for( const key in this.state ) {
@@ -128,8 +117,7 @@ class GalleryState {
     this.state = { ...this.defaults };
   }
 
-  /**
-   * Registers a listener for state changes.
+  /** Registers a listener for state changes.
    * @param {string} key - The state key to watch
    * @param {Function} callback - Callback function (newValue, oldValue) => void
    * @returns {Function} Unsubscribe function
@@ -146,8 +134,7 @@ class GalleryState {
     };
   }
 
-  /**
-   * Notifies listeners of a state change.
+  /** Notifies listeners of a state change.
    * @private
    * @param {string} key - The state key that changed
    * @param {*} newValue - The new value
@@ -159,16 +146,14 @@ class GalleryState {
     }
   }
 
-  /**
-   * Gets all state as a plain object.
+  /** Gets all state as a plain object.
    * @returns {Object} All state values
    */
   getAll() {
     return { ...this.state };
   }
 
-  /**
-   * Resets a specific key to its default value.
+  /** Resets a specific key to its default value.
    * @param {string} key - The state key to reset
    */
   reset( key ) {

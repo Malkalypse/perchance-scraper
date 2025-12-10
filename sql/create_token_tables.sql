@@ -1,4 +1,6 @@
--- Drop old tokens table
+-- Drop tables in correct order (junction tables first, then tokens)
+DROP TABLE IF EXISTS positive_prompt_tokens;
+DROP TABLE IF EXISTS negative_prompt_tokens;
 DROP TABLE IF EXISTS tokens;
 
 -- Create new tokens table (just id and text)

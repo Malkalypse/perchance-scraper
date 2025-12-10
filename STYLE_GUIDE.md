@@ -30,17 +30,30 @@
   - has bugs at the basic level, or
   - its architecture is murky,
 
-  introducing further complexity will only compound existing problems and create technical debt going forward.
-Always have a solid foundation and a floor plan before making additions.
+  then introducing further complexity will only compound existing problems and create technical debt going forward.
+- Always have a solid foundation and a floor plan before making additions.
 
 ## General Principles
-
 -   **Consistency**: Always match the style of the surrounding codebase.
 -   **Readability**: Prioritize clean, readable code with descriptive variable and function names.
 -   **Security**: Always follow good security practices.
 
-## Parentheses Spacing
+## Formatting
+- When multiple variables are defined one after another, line up the assignment operators
 
+*Example:*
+
+```
+const table         = row.closest( 'table' );
+const editableCells = getEditableCells( row );
+const saveBtn       = row.querySelector( '.save-btn' );
+```
+
+### Indents
+- Use four-space indenting for Python and MySQL
+- Use two-space indenting for all other code
+
+### Parentheses Spacing
 - Always include a single space **inside** parentheses.
 - Do **not** add spaces **outside** parentheses.
 
@@ -53,9 +66,13 @@ Always have a solid foundation and a floor plan before making additions.
 - `if ( condition )`
 
 ## Organization
-
 - Functions should be placed in the order they are called, when possible
-- Functions that work together should be placed together
+- Functions that work together exclusively should be placed together
+
+### Inside of a class, use the following guidelines
+- Higher-level functions above, lower-level helpers below
+- Helper functions called by a single function should be placed directly below the functions that call them
+- Helper functions called by multiple functions should be placed below the last function that calls them
 
 ## Commenting
 

@@ -1,10 +1,8 @@
-/**
- * Element creation utilities for building DOM elements with less boilerplate.
+/** Element creation utilities for building DOM elements with less boilerplate.
  * Provides a chainable API for creating and configuring elements.
  */
 class DOMHelper {
-  /**
-   * Creates a new element with optional attributes, styles, and children.
+  /** Creates a new element with optional attributes, styles, and children.
    * @param {string} tag - HTML tag name
    * @param {Object} options - Configuration options
    * @param {Object} options.attrs - HTML attributes
@@ -73,8 +71,7 @@ class DOMHelper {
     return element;
   }
 
-  /**
-   * Appends children to an element.
+  /** Appends children to an element.
    * @param {HTMLElement} parent - Parent element
    * @param {Array|HTMLElement|string} children - Child elements or text
    */
@@ -92,8 +89,7 @@ class DOMHelper {
     }
   }
 
-  /**
-   * Creates a div element.
+  /** Creates a div element.
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created div
    */
@@ -101,8 +97,7 @@ class DOMHelper {
     return this.create( 'div', options );
   }
 
-  /**
-   * Creates a span element.
+  /** Creates a span element.
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created span
    */
@@ -110,8 +105,7 @@ class DOMHelper {
     return this.create( 'span', options );
   }
 
-  /**
-   * Creates a button element.
+  /** Creates a button element.
    * @param {string} text - Button text
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created button
@@ -120,8 +114,7 @@ class DOMHelper {
     return this.create( 'button', { ...options, text } );
   }
 
-  /**
-   * Creates an input element.
+  /** Creates an input element.
    * @param {string} type - Input type
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created input
@@ -133,8 +126,7 @@ class DOMHelper {
     } );
   }
 
-  /**
-   * Creates an image element.
+  /** Creates an image element.
    * @param {string} src - Image source URL
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created img
@@ -146,8 +138,7 @@ class DOMHelper {
     } );
   }
 
-  /**
-   * Creates a link element.
+  /** Creates a link element.
    * @param {string} href - Link URL
    * @param {string} text - Link text
    * @param {Object} options - Configuration options
@@ -161,8 +152,7 @@ class DOMHelper {
     } );
   }
 
-  /**
-   * Creates a paragraph element.
+  /** Creates a paragraph element.
    * @param {string} text - Paragraph text
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created paragraph
@@ -171,8 +161,7 @@ class DOMHelper {
     return this.create( 'p', { ...options, text } );
   }
 
-  /**
-   * Creates a label element.
+  /** Creates a label element.
    * @param {string} text - Label text
    * @param {Object} options - Configuration options
    * @returns {HTMLElement} The created label
@@ -181,8 +170,7 @@ class DOMHelper {
     return this.create( 'label', { ...options, text } );
   }
 
-  /**
-   * Creates a select element with options.
+  /** Creates a select element with options.
    * @param {Array} options - Array of {value, text} objects or strings
    * @param {Object} config - Configuration options
    * @returns {HTMLElement} The created select
@@ -203,8 +191,7 @@ class DOMHelper {
     return select;
   }
 
-  /**
-   * Removes all children from an element.
+  /** Removes all children from an element.
    * @param {HTMLElement} element - Element to clear
    */
   static clear( element ) {
@@ -213,8 +200,7 @@ class DOMHelper {
     }
   }
 
-  /**
-   * Toggles a class on an element.
+  /** Toggles a class on an element.
    * @param {HTMLElement} element - Target element
    * @param {string} className - Class name to toggle
    * @param {boolean} force - Force add (true) or remove (false)
@@ -223,8 +209,7 @@ class DOMHelper {
     element.classList.toggle( className, force );
   }
 
-  /**
-   * Shows an element.
+  /** Shows an element.
    * @param {HTMLElement} element - Element to show
    * @param {string} display - Display value (default: 'block')
    */
@@ -232,16 +217,14 @@ class DOMHelper {
     element.style.display = display;
   }
 
-  /**
-   * Hides an element.
+  /** Hides an element.
    * @param {HTMLElement} element - Element to hide
    */
   static hide( element ) {
     element.style.display = 'none';
   }
 
-  /**
-   * Queries a single element.
+  /** Queries a single element.
    * @param {string} selector - CSS selector
    * @param {HTMLElement} parent - Parent element (default: document)
    * @returns {HTMLElement|null} Found element
@@ -250,8 +233,7 @@ class DOMHelper {
     return parent.querySelector( selector );
   }
 
-  /**
-   * Queries multiple elements.
+  /** Queries multiple elements.
    * @param {string} selector - CSS selector
    * @param {HTMLElement} parent - Parent element (default: document)
    * @returns {Array<HTMLElement>} Array of found elements
@@ -260,8 +242,7 @@ class DOMHelper {
     return Array.from( parent.querySelectorAll( selector ) );
   }
 
-  /**
-   * Creates a DocumentFragment with children.
+  /** Creates a DocumentFragment with children.
    * @param {Array|HTMLElement|string} children - Child elements
    * @returns {DocumentFragment} The created fragment
    */
@@ -271,8 +252,7 @@ class DOMHelper {
     return frag;
   }
 
-  /**
-   * Delegates event handling to a parent element.
+  /** Delegates event handling to a parent element.
    * @param {HTMLElement} parent - Parent element
    * @param {string} event - Event name
    * @param {string} selector - Child selector

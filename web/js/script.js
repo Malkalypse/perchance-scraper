@@ -10,10 +10,9 @@ const state = new GalleryState( 'gallery', {
   searchBy: 'prompt',
   sortMode: 'recent',
   wholeWordsOnly: true,
-  searchCap: null,
   imagesOnly: false,
   showTags: false,
-  selectMode: false
+  showHidden: false
 } );
 
 // API client for server communication
@@ -29,7 +28,6 @@ const selector = new ImageSelector( {
   }
 } );
 
-
 // ============================================
 // Initialize UI from saved state
 // ============================================
@@ -41,17 +39,21 @@ let searchString = state.get( 'searchString' );
 let searchBy = state.get( 'searchBy' );
 let sortMode = state.get( 'sortMode' );
 let wholeWordsOnly = state.get( 'wholeWordsOnly' );
-let searchCap = state.get( 'searchCap' );
 
 DOMHelper.query( '#limit' ).value = limit;
 DOMHelper.query( '#search' ).value = searchString;
 DOMHelper.query( '#search_by' ).value = searchBy;
-if( searchCap ) DOMHelper.query( '#searchLimit' ).value = searchCap;
 DOMHelper.query( '#wholeWords' ).checked = wholeWordsOnly;
 DOMHelper.query( '#sort_by' ).value = sortMode;
 DOMHelper.query( '#imagesOnly' ).checked = state.get( 'imagesOnly' );
 DOMHelper.query( '#tag' ).checked = state.get( 'showTags' );
-DOMHelper.query( '#selectMode' ).checked = state.get( 'selectMode' );
+DOMHelper.query( '#showHidden' ).checked = state.get( 'showHidden' );
+
+// Reset offset when search is active to avoid showing no results
+if( searchString ) {
+  offset = 0;
+  state.set( 'offset', 0 );
+}
 
 // Apply images-only class to body if set
 if( state.get( 'imagesOnly' ) ) {
@@ -63,10 +65,8 @@ if( state.get( 'showTags' ) ) {
   document.body.classList.add( 'show-tags' );
 }
 
-// Enable selector if selectMode is active
-if( state.get( 'selectMode' ) ) {
-  selector.enable( DOMHelper.query( '#gallery' ) );
-}
+// Always enable selector
+selector.enable( DOMHelper.query( '#gallery' ) );
 
 /**
  * Updates tags for an image and all images with the same prompt combination.
@@ -125,24 +125,16 @@ function createTagInput( item, containerStyles = {} ) {
 }
 
 /**
- * Creates an image element with click selection handler and selected state.
- * Handles both single-click selection and select mode (drag selection).
+ * Creates an image element with selected state.
+ * Selection is handled by ImageSelector (click and drag).
  * @param {Object} item - The image item containing filename and metadata
- * @returns {HTMLElement} The img element with event handlers attached
+ * @returns {HTMLElement} The img element
  */
 function createImageElement( item ) {
   return DOMHelper.img( `../images/medium/${item.filename}`, {
     class: selector.isSelected( item.filename ) ? 'selected' : '',
     data: { filename: item.filename },
-    styles: { maxWidth: '300px', cursor: 'pointer' },
-    events: {
-      click: function () {
-        // Skip if selectMode is active (handled by drag selection)
-        if( state.get( 'selectMode' ) ) return;
-
-        selector.toggle( item.filename, this );
-      }
-    }
+    styles: { maxWidth: '300px', cursor: 'pointer' }
   } );
 }
 
@@ -318,30 +310,35 @@ function renderNormalMode( filtered, gallery ) {
  * Updates pagination controls and page info after rendering.
  */
 async function loadData() {
-  const params = {};
+  const showHidden = state.get( 'showHidden' );
+
+  const params = {
+    limit: limit,
+    offset: offset,
+    sort: sortMode,
+    showHidden: showHidden
+  };
 
   if( searchString ) {
-    // Server-side search
+    // Server-side search with pagination
     params.searchTerm = searchString;
     params.searchBy = searchBy;
     params.wholeWords = wholeWordsOnly;
-    params.sort = sortMode;
-
-    if( searchCap ) {
-      params.searchLimit = searchCap;
-    }
-  } else {
-    // Normal pagination with sorting
-    params.limit = limit;
-    params.offset = offset;
-    params.sort = sortMode;
   }
 
-  const items = await api.get( 'api/data.php', params );
+  const response = await api.get( 'api/data.php', params );
 
-  // Safeguard: ensure items is always an array
-  if( !Array.isArray( items ) ) {
-    console.error( 'items is not an array:', items );
+  // Handle both array response (no search) and object response (with search count)
+  let items;
+  let totalCount = null;
+
+  if( Array.isArray( response ) ) {
+    items = response;
+  } else if( response && typeof response === 'object' ) {
+    items = response.items || [];
+    totalCount = response.totalCount || null;
+  } else {
+    console.error( 'Unexpected response format:', response );
     return;
   }
 
@@ -351,8 +348,15 @@ async function loadData() {
   gallery.innerHTML = '';
 
   // Render gallery based on sort mode
+  let promptGroupCount = 0;
   if( sortMode === 'prompt' ) {
     renderPromptMode( items, gallery );
+    // Count unique prompts for navigation info
+    const uniquePrompts = new Set();
+    items.forEach( item => {
+      if( item.prompt ) uniquePrompts.add( item.prompt );
+    } );
+    promptGroupCount = uniquePrompts.size;
   } else {
     renderNormalMode( items, gallery );
   }
@@ -360,13 +364,34 @@ async function loadData() {
   // Update pagination controls
   const currentPage = Math.floor( offset / limit ) + 1;
   DOMHelper.query( '#pageInfo' ).textContent =
-    searchString
-      ? `Search results: ${items.length} items`
+    searchString && totalCount !== null
+      ? `Search results: ${totalCount.toLocaleString()} total (showing ${items.length})`
       : '';
 
   DOMHelper.query( '#page' ).value = currentPage;
   DOMHelper.query( '#prev' ).disabled = ( offset === 0 );
-  DOMHelper.query( '#next' ).disabled = ( !searchString && items.length < limit );
+
+  // Disable Next button if we received fewer items than the limit (no more results)
+  // OR if we're searching and have reached the end based on total count
+  const hasMoreResults = searchString && totalCount !== null
+    ? ( offset + items.length ) < totalCount
+    : items.length >= limit;
+  DOMHelper.query( '#next' ).disabled = !hasMoreResults;
+
+  // Update navigation info showing current range
+  if( sortMode === 'prompt' && promptGroupCount > 0 ) {
+    // In prompt mode, show prompt group numbers
+    const startPrompt = offset + 1;
+    const endPrompt = offset + promptGroupCount;
+    DOMHelper.query( '#navInfo' ).textContent = `${startPrompt} to ${endPrompt}`;
+  } else if( items.length > 0 ) {
+    // In other modes, show image numbers
+    const startIndex = offset + 1;
+    const endIndex = offset + items.length;
+    DOMHelper.query( '#navInfo' ).textContent = `${startIndex} to ${endIndex}`;
+  } else {
+    DOMHelper.query( '#navInfo' ).textContent = '';
+  }
 
   updateSelectAllButton();
 }
@@ -375,7 +400,25 @@ async function loadData() {
  * Updates the delete button's disabled state based on selection count.
  */
 function updateDeleteButton() {
-  DOMHelper.query( '#deleteSelected' ).disabled = selector.getSelected().length === 0;
+  const selectedCount = selector.getSelected().length;
+  const hasSelection = selectedCount > 0;
+  const showHidden = state.get( 'showHidden' );
+
+  DOMHelper.query( '#deleteSelected' ).disabled = !hasSelection;
+  DOMHelper.query( '#addToCollection' ).disabled = !hasSelection;
+
+  // Update hide/unhide button
+  const hideButton = DOMHelper.query( '#hideSelected' );
+  hideButton.disabled = !hasSelection;
+  hideButton.textContent = showHidden ? 'Unhide' : 'Hide';
+
+  // Update selection info text
+  const selectionInfo = DOMHelper.query( '#selectionInfo' );
+  if( hasSelection ) {
+    selectionInfo.textContent = `${selectedCount} image${selectedCount === 1 ? '' : 's'} selected`;
+  } else {
+    selectionInfo.textContent = '';
+  }
 }
 
 /**
@@ -387,6 +430,41 @@ function updateSelectAllButton() {
   const allSelected = images.length > 0 && Array.from( images ).every( img => img.classList.contains( 'selected' ) );
   const selectAllBtn = DOMHelper.query( '#selectAll' );
   selectAllBtn.querySelector( 'span' ).textContent = allSelected ? 'Unselect All' : 'Select All';
+}
+
+/**
+ * Hides or unhides selected images based on current view mode.
+ * Sends request to server, clears selection, and reloads gallery.
+ */
+async function performHide() {
+  const selected = selector.getSelected();
+  if( selected.length === 0 ) return;
+
+  const showHidden = state.get( 'showHidden' );
+  const action = showHidden ? 'unhide' : 'hide';
+  const actionCapitalized = showHidden ? 'Unhide' : 'Hide';
+
+  if( !confirm( `${actionCapitalized} ${selected.length} selected image(s)?` ) ) return;
+
+  try {
+    const result = await api.post( 'api/hide.php', {
+      filenames: Array.from( selected ),
+      hidden: !showHidden
+    } );
+
+    if( !result.success ) {
+      alert( 'Failed to hide images' );
+      return;
+    }
+  } catch( error ) {
+    console.error( 'Hide error:', error );
+    alert( 'Error hiding images: ' + error.message );
+    return;
+  }
+
+  selector.deselectAll();
+  updateDeleteButton();
+  loadData(); // silently refresh gallery
 }
 
 /**
@@ -416,8 +494,69 @@ async function performDelete() {
   loadData(); // silently refresh gallery
 }
 
+/**
+ * Shows the collection modal popup.
+ */
+function showCollectionModal() {
+  const selected = selector.getSelected();
+  if( selected.length === 0 ) return;
+
+  const modal = DOMHelper.query( '#collectionModal' );
+  const input = DOMHelper.query( '#collectionInput' );
+  const confirmBtn = DOMHelper.query( '#confirmCollection' );
+
+  input.value = '';
+  confirmBtn.textContent = 'Add to new collection';
+  modal.style.display = 'flex';
+  input.focus();
+}
+
+/**
+ * Hides the collection modal popup.
+ */
+function hideCollectionModal() {
+  DOMHelper.query( '#collectionModal' ).style.display = 'none';
+}
+
+/**
+ * Adds selected images to a collection.
+ */
+async function performAddToCollection() {
+  const selected = selector.getSelected();
+  if( selected.length === 0 ) return;
+
+  const collectionTitle = DOMHelper.query( '#collectionInput' ).value.trim();
+
+  try {
+    const result = await api.post( 'api/add_to_collection.php', {
+      filenames: Array.from( selected ),
+      collectionTitle: collectionTitle
+    } );
+
+    if( !result.success ) {
+      alert( 'Failed to add images to collection' );
+      return;
+    }
+
+    hideCollectionModal();
+    alert( `Added ${result.imagesAdded} image(s) to "${result.collectionTitle}"` );
+    selector.deselectAll();
+    updateDeleteButton();
+  } catch( error ) {
+    console.error( 'Add to collection error:', error );
+    alert( 'Error adding to collection: ' + error.message );
+  }
+}
+
+
+// Hide selected handler
+DOMHelper.query( '#hideSelected' ).addEventListener( 'click', performHide );
+
 // Delete selected handler
 DOMHelper.query( '#deleteSelected' ).addEventListener( 'click', performDelete );
+
+// Add to collection handler
+DOMHelper.query( '#addToCollection' ).addEventListener( 'click', showCollectionModal );
 
 // Delete key handler
 document.addEventListener( 'keydown', ( e ) => {
@@ -451,17 +590,6 @@ searchInput.addEventListener( 'blur', () => {
   loadData();
 } );
 
-DOMHelper.query( '#searchLimit' ).addEventListener( 'input', e => {
-  const val = parseInt( e.target.value, 10 );
-  searchCap = isNaN( val ) ? null : val;
-  if( searchCap ) {
-    state.set( 'searchCap', searchCap );
-  } else {
-    state.remove( 'searchCap' );
-  }
-  loadData();
-} );
-
 DOMHelper.query( '#wholeWords' ).addEventListener( 'change', e => {
   wholeWordsOnly = e.target.checked;
   state.set( 'wholeWordsOnly', wholeWordsOnly );
@@ -478,12 +606,13 @@ DOMHelper.query( '#search_by' ).addEventListener( 'change', e => {
 
 DOMHelper.query( '#clearSearch' ).addEventListener( 'click', () => {
   searchString = '';
-  searchCap = null;
+  state.set( 'searchString', '' );
   DOMHelper.query( '#search' ).value = '';
-  DOMHelper.query( '#searchLimit' ).value = '';
   DOMHelper.query( '#wholeWords' ).checked = true;
   wholeWordsOnly = true;
+  state.set( 'wholeWordsOnly', true );
   offset = 0;
+  state.set( 'offset', offset );
   loadData();
 } );
 
@@ -511,6 +640,16 @@ DOMHelper.query( '#imagesOnly' ).addEventListener( 'change', () => {
   loadData();
 } );
 
+// Show hidden toggle
+DOMHelper.query( '#showHidden' ).addEventListener( 'change', () => {
+  const isChecked = DOMHelper.query( '#showHidden' ).checked;
+  state.set( 'showHidden', isChecked );
+  offset = 0;
+  state.set( 'offset', offset );
+  updateDeleteButton(); // Update hide/unhide button text
+  loadData();
+} );
+
 // Show tags toggle
 DOMHelper.query( '#tag' ).addEventListener( 'change', () => {
   const isChecked = DOMHelper.query( '#tag' ).checked;
@@ -518,15 +657,78 @@ DOMHelper.query( '#tag' ).addEventListener( 'change', () => {
   document.body.classList.toggle( 'show-tags', isChecked );
 } );
 
-// Select mode toggle
-DOMHelper.query( '#selectMode' ).addEventListener( 'change', () => {
-  const selectModeOn = DOMHelper.query( '#selectMode' ).checked;
-  state.set( 'selectMode', selectModeOn );
+// Collections sidebar toggle
+DOMHelper.query( '#collections' ).addEventListener( 'change', async () => {
+  const isChecked = DOMHelper.query( '#collections' ).checked;
+  const sidebar = document.getElementById( 'collectionsSidebar' );
 
-  if( selectModeOn ) {
-    selector.enable( DOMHelper.query( '#gallery' ) );
+  if( !sidebar ) {
+    console.error( 'Collections sidebar element not found' );
+    return;
+  }
+
+  if( isChecked ) {
+    sidebar.style.display = 'block';
+    document.body.classList.add( 'collections-visible' );
+    await loadCollections();
   } else {
-    selector.disable();
+    sidebar.style.display = 'none';
+    document.body.classList.remove( 'collections-visible' );
+  }
+} );
+
+/**
+ * Loads and displays the list of collections in the sidebar.
+ */
+async function loadCollections() {
+  try {
+    const collections = await api.get( 'api/collections.php' );
+    const collectionsList = DOMHelper.query( '#collectionsList' );
+    collectionsList.innerHTML = '';
+
+    if( collections.length === 0 ) {
+      collectionsList.innerHTML = '<p style="color: #666; font-size: 0.9em;">No collections yet</p>';
+      return;
+    }
+
+    collections.forEach( collection => {
+      const item = DOMHelper.div( {
+        class: 'collection-item',
+        attrs: { 'data-collection-id': collection.id },
+        children: [collection.title]
+      } );
+
+      collectionsList.appendChild( item );
+    } );
+  } catch( error ) {
+    console.error( 'Error loading collections:', error );
+    DOMHelper.query( '#collectionsList' ).innerHTML = '<p style="color: #e74c3c;">Failed to load collections</p>';
+  }
+}
+
+// Collection modal listeners
+DOMHelper.query( '#collectionInput' ).addEventListener( 'input', ( e ) => {
+  const confirmBtn = DOMHelper.query( '#confirmCollection' );
+  confirmBtn.textContent = e.target.value.trim() ? 'Add to collection' : 'Add to new collection';
+} );
+
+DOMHelper.query( '#confirmCollection' ).addEventListener( 'click', performAddToCollection );
+DOMHelper.query( '#cancelCollection' ).addEventListener( 'click', hideCollectionModal );
+
+// Close modal on Escape key
+document.addEventListener( 'keydown', ( e ) => {
+  if( e.key === 'Escape' ) {
+    const modal = DOMHelper.query( '#collectionModal' );
+    if( modal.style.display === 'flex' ) {
+      hideCollectionModal();
+    }
+  }
+} );
+
+// Close modal when clicking outside
+DOMHelper.query( '#collectionModal' ).addEventListener( 'click', ( e ) => {
+  if( e.target.id === 'collectionModal' ) {
+    hideCollectionModal();
   }
 } );
 
@@ -557,14 +759,25 @@ DOMHelper.query( '#prev' ).addEventListener( 'click', () => {
   state.set( 'offset', offset );
   loadData();
 } );
-DOMHelper.query( '#go' ).addEventListener( 'click', () => {
-  const pageInput = parseInt( DOMHelper.query( '#page' ).value, 10 );
-  if( !isNaN( pageInput ) && pageInput > 0 ) {
-    offset = ( pageInput - 1 ) * limit;
+
+// Page input - handle Enter key and spinner changes
+const pageInput = DOMHelper.query( '#page' );
+const goToPage = () => {
+  const pageValue = parseInt( pageInput.value, 10 );
+  if( !isNaN( pageValue ) && pageValue > 0 ) {
+    offset = ( pageValue - 1 ) * limit;
     state.set( 'offset', offset );
     loadData();
   }
+};
+
+pageInput.addEventListener( 'keypress', ( e ) => {
+  if( e.key === 'Enter' ) {
+    goToPage();
+  }
 } );
+
+pageInput.addEventListener( 'change', goToPage );
 
 /**
  * Adjusts the gallery's top margin to match the toolbar height.
@@ -573,8 +786,13 @@ DOMHelper.query( '#go' ).addEventListener( 'click', () => {
 function adjustGalleryMargin() {
   const toolbar = DOMHelper.query( '#toolbar' );
   const gallery = DOMHelper.query( '#gallery' );
+  const sidebar = document.getElementById( 'collectionsSidebar' );
   const toolbarHeight = toolbar.offsetHeight;
   gallery.style.marginTop = toolbarHeight + 'px';
+  if( sidebar ) {
+    sidebar.style.top = toolbarHeight + 'px';
+    sidebar.style.height = `calc(100vh - ${toolbarHeight}px)`;
+  }
 }
 
 // Initial load

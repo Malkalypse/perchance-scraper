@@ -406,7 +406,7 @@ if __name__ == "__main__":
         import subprocess
         try:
             result = subprocess.run(
-                ['python', 'build_token_relationships.py', '--update'],
+                [sys.executable, 'build_token_relationships.py', '--update'],
                 cwd='c:/xampp/htdocs/perchance-scraper/python',
                 capture_output=True,
                 text=True,
@@ -424,13 +424,19 @@ if __name__ == "__main__":
             from pathlib import Path
             script_dir = Path(__file__).parent
             result = subprocess.run(
-                ['python', str(script_dir / 'update_table_counts.py')],
+                [sys.executable, str(script_dir / 'update_table_counts.py')],
                 capture_output=True,
-                text=True
+                text=True,
+                cwd=str(script_dir)
             )
             if result.returncode == 0:
                 print( result.stdout )
             else:
-                print( f"Warning: Failed to update table counts cache: {result.stderr}" )
+                error_msg = f"Warning: Failed to update table counts cache (exit code {result.returncode})"
+                if result.stderr:
+                    error_msg += f":\n{result.stderr}"
+                if result.stdout:
+                    error_msg += f"\nOutput: {result.stdout}"
+                print( error_msg )
         except Exception as e:
             print( f"Warning: Could not update table counts cache: {e}" )

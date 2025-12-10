@@ -70,7 +70,7 @@ def save_counts_cache(counts):
     with open(cache_file, 'w', encoding='utf-8') as f:
         json.dump(counts, f, indent=2)
     
-    print(f"\n✓ Cache saved to: {cache_file}")
+    print(f"\nCache saved to: {cache_file}")
 
 if __name__ == '__main__':
     try:
