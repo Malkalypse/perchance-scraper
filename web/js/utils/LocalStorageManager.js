@@ -1,20 +1,22 @@
 /** Universal localStorage manager for persisting application state.
  * Provides a clean API for getting/setting state with automatic serialization.
  */
-class GalleryState {
-  /** Creates a new GalleryState instance.
+class LocalStorageManager {
+  
+  /** Creates a new LocalStorageManager instance.
    * @param {string} storagePrefix - Prefix for localStorage keys to avoid collisions
    * @param {Object} defaults - Default values for state properties
    */
   constructor( storagePrefix = 'app', defaults = {} ) {
-    this.prefix = storagePrefix;
-    this.defaults = defaults;
-    this.state = {};
-    this.listeners = {}; // For change notifications
+    this.prefix     = storagePrefix;
+    this.defaults   = defaults;
+    this.state      = {};
+    this.listeners  = {}; // for change notifications
 
     // Load initial state from localStorage
     this._loadState();
   }
+
 
   /** Loads all state from localStorage.
    * @private
@@ -22,6 +24,7 @@ class GalleryState {
   _loadState() {
     for( const key in this.defaults ) {
       const storedValue = localStorage.getItem( this._getKey( key ) );
+
       if( storedValue !== null ) {
         this.state[key] = this._deserialize( storedValue );
       } else {
@@ -29,6 +32,7 @@ class GalleryState {
       }
     }
   }
+
 
   /** Gets the full localStorage key with prefix.
    * @private
@@ -38,6 +42,7 @@ class GalleryState {
   _getKey( key ) {
     return `${this.prefix}_${key}`;
   }
+
 
   /** Deserializes a value from localStorage.
    * @private
@@ -51,6 +56,7 @@ class GalleryState {
       return value; // Return as string if not valid JSON
     }
   }
+  
 
   /** Serializes a value for localStorage.
    * @private
@@ -64,6 +70,7 @@ class GalleryState {
     return JSON.stringify( value );
   }
 
+
   /** Gets a state value.
    * @param {string} key - The state key
    * @returns {*} The state value
@@ -71,6 +78,7 @@ class GalleryState {
   get( key ) {
     return this.state[key];
   }
+
 
   /** Sets a state value and persists to localStorage.
    * @param {string} key - The state key
@@ -87,6 +95,7 @@ class GalleryState {
     }
   }
 
+
   /** Sets multiple state values at once.
    * @param {Object} updates - Object with key-value pairs to update
    */
@@ -100,6 +109,7 @@ class GalleryState {
     }
   }
 
+
   /** Removes a state value.
    * @param {string} key - The state key
    */
@@ -108,14 +118,15 @@ class GalleryState {
     localStorage.removeItem( this._getKey( key ) );
   }
 
-  /** Clears all state (localStorage and memory).
-   */
+
+  /** Clears all state (localStorage and memory). */
   clear() {
     for( const key in this.state ) {
       localStorage.removeItem( this._getKey( key ) );
     }
     this.state = { ...this.defaults };
   }
+
 
   /** Registers a listener for state changes.
    * @param {string} key - The state key to watch
@@ -134,6 +145,7 @@ class GalleryState {
     };
   }
 
+
   /** Notifies listeners of a state change.
    * @private
    * @param {string} key - The state key that changed
@@ -146,12 +158,14 @@ class GalleryState {
     }
   }
 
+
   /** Gets all state as a plain object.
    * @returns {Object} All state values
    */
   getAll() {
     return { ...this.state };
   }
+
 
   /** Resets a specific key to its default value.
    * @param {string} key - The state key to reset
@@ -163,7 +177,6 @@ class GalleryState {
   }
 }
 
+
 // Export for use in other modules
-if( typeof module !== 'undefined' && module.exports ) {
-  module.exports = GalleryState;
-}
+export default LocalStorageManager;

@@ -268,7 +268,5 @@ class DOMHelper {
   }
 }
 
-// Export for use in other modules
-if( typeof module !== 'undefined' && module.exports ) {
-  module.exports = DOMHelper;
-}
+
+export default DOMHelper;

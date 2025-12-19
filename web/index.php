@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
@@ -12,6 +12,7 @@
   <!-- Fixed Toolbar -->
   <div id="toolbar">
 
+    <!-- Navigation Controls -->
     <div id="nav_controls" class="controls">      
       <label for="sort_by">Sort by:</label>
       <select id="sort_by">
@@ -29,6 +30,7 @@
       <input type="number" id="page" min="1" value="1">
     </div>
 
+    <!-- Search Controls -->
     <div id="search_controls" class="controls">
       <label for="search_by">Search by:</label>
       <select id="search_by">
@@ -45,6 +47,7 @@
       <button id="clearSearch">Clear</button>
     </div>
 
+    <!-- Selection Controls -->
     <div id="selection_controls" class="controls">
       <button id="selectAll"><span>Select All</span></button>
       <button id="addToCollection" disabled>Add to Collection</button>
@@ -53,6 +56,7 @@
       <span id="selectionInfo"></span>
     </div>
 
+    <!-- Display Options -->
     <div id="display_controls" class="controls">
       <label for="tag"><input type="checkbox" id="tag">Tags</label>      
       <label for="imagesOnly"><input type="checkbox" id="imagesOnly">Images only</label>
@@ -60,6 +64,7 @@
       <label for="showHidden"><input type="checkbox" id="showHidden">Show hidden</label>
     </div>
 
+    <!-- Link to Tables Page -->
     <div id="tables_link_controls" class="controls">
       <a href="tables.php" style="color: var(--link-color); text-decoration: none;">Tables →</a>
     </div>
@@ -73,6 +78,7 @@
     <div id="collectionsList"></div>
   </div>
 
+  <!-- Gallery Container -->
   <div id="gallery"></div>
 
   <!-- Collection Popup Modal -->
@@ -87,13 +93,8 @@
     </div>
   </div>
 
-  <!-- Load reusable classes -->
-  <script src="js/GalleryState.js"></script>
-  <script src="js/APIClient.js"></script>
-  <script src="js/DOMHelper.js"></script>
-  <script src="js/ImageSelector.js"></script>
-
   <!-- Load application script -->
-  <script src="js/script.js"></script>
+  <script type="module" src="js/script.js"></script>
+
 </body>
 </html>
